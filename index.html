@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Stundenzettel">
+<meta name="theme-color" content="#134e4a">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Stundenzettel</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap');
+  :root {
+    --teal-900:#134e4a; --teal-800:#115e59; --teal-700:#0f766e; --teal-600:#0d9488; --teal-100:#ccfbf1;
+    --amber-700:#b45309;
+    --stone-100:#f5f5f4; --stone-200:#e7e5e4; --stone-300:#d6d3d1; --stone-400:#a8a29e; --stone-500:#78716c; --stone-800:#292524;
+    --red-600:#dc2626;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--stone-100); font-family:'Inter',system-ui,sans-serif; color:var(--stone-800); -webkit-tap-highlight-color:transparent; }
+  h1, h2 { font-family:'Space Grotesk',system-ui,sans-serif; margin:0; }
+  header { background:var(--teal-900); color:#fff; position:sticky; top:0; z-index:20; box-shadow:0 2px 6px rgba(0,0,0,.15); }
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; }
+  .weekbar { display:flex; align-items:center; justify-content:space-between; padding:0 16px 12px; }
+  .iconbtn { background:none; border:none; color:#fff; padding:8px; border-radius:999px; cursor:pointer; font-size:16px; line-height:1; }
+  .iconbtn:hover { background:rgba(255,255,255,.12); }
+  main { max-width:480px; margin:0 auto; padding:16px; padding-bottom:190px; }
+  .card { background:#fff; border:1px solid var(--stone-200); border-radius:14px; padding:14px 16px; margin-bottom:12px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  .card-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .day-name { font-weight:600; font-size:14px; }
+  .day-date { font-size:12px; color:var(--stone-400); }
+  .day-total { font-weight:600; font-size:14px; color:var(--teal-800); font-variant-numeric:tabular-nums; }
+  .fields { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .field label { font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:var(--stone-500); display:block; margin-bottom:4px; }
+  .field input { width:100%; border:1px solid var(--stone-300); border-radius:8px; padding:7px 8px; font-size:14px; font-family:inherit; }
+  .field input:focus { outline:2px solid var(--teal-600); outline-offset:-1px; border-color:var(--teal-600); }
+  footer { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid var(--stone-200); box-shadow:0 -2px 10px rgba(0,0,0,.06); }
+  .footer-inner { max-width:480px; margin:0 auto; padding:12px 16px 16px; }
+  .totalrow { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px; }
+  .totalrow .label { font-size:11px; text-transform:uppercase; color:var(--stone-500); }
+  .totalrow .value { font-size:20px; font-weight:700; color:var(--amber-700); font-variant-numeric:tabular-nums; }
+  .btn-primary { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; background:var(--teal-700); color:#fff; text-decoration:none; border:none; padding:13px; border-radius:12px; font-weight:600; font-size:15px; cursor:pointer; }
+  .btn-primary:hover { background:var(--teal-800); }
+  .btn-ghost { display:flex; align-items:center; justify-content:center; gap:6px; width:100%; background:none; border:none; color:var(--stone-500); font-size:12px; padding:7px; cursor:pointer; font-family:inherit; }
+  .btn-ghost:hover { color:var(--teal-700); }
+  .note { text-align:center; font-size:12px; color:var(--teal-700); margin-bottom:6px; display:none; }
+  .error { font-size:12px; color:var(--red-600); margin-bottom:8px; display:none; }
+  .overlay { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:30; display:none; align-items:flex-end; justify-content:center; }
+  .overlay.open { display:flex; }
+  .sheet { background:#fff; width:100%; max-width:420px; border-radius:16px 16px 0 0; }
+  .sheet-head { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--stone-200); }
+  .sheet-body { padding:16px 20px; display:flex; flex-direction:column; gap:12px; }
+  .sheet-body label { font-size:12px; color:var(--stone-500); display:block; margin-bottom:4px; }
+  .sheet-body input { width:100%; border:1px solid var(--stone-300); border-radius:8px; padding:9px 10px; font-size:14px; font-family:inherit; }
+  .sheet-foot { display:flex; gap:8px; padding:16px 20px; border-top:1px solid var(--stone-200); }
+  .btn-cancel { flex:1; padding:11px; border-radius:10px; border:1px solid var(--stone-300); background:#fff; color:var(--stone-500); font-weight:600; cursor:pointer; font-family:inherit; }
+  .btn-save { flex:1; padding:11px; border-radius:10px; border:none; background:var(--teal-700); color:#fff; font-weight:600; cursor:pointer; font-family:inherit; }
+  .menu { position:absolute; right:0; top:44px; background:#fff; border:1px solid var(--stone-200); border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,.12); overflow:hidden; display:none; z-index:25; min-width:180px; }
+  .menu.open { display:block; }
+  .menu button { width:100%; text-align:left; padding:12px 16px; background:none; border:none; font-size:14px; display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--stone-800); font-family:inherit; }
+  .menu button:hover { background:var(--stone-100); }
+</style>
+</head>
+<body>
+<header>
+  <div class="topbar">
+    <h1 style="font-size:18px;font-weight:700;">Stundenzettel</h1>
+    <div style="position:relative;">
+      <button class="iconbtn" id="menuBtn" aria-label="Menü">☰</button>
+      <div class="menu" id="menu">
+        <button id="adminMenuBtn">👤 Adminbereich</button>
+      </div>
+    </div>
+  </div>
+  <div class="weekbar">
+    <button class="iconbtn" id="prevWeek" aria-label="Vorherige Woche">‹</button>
+    <div style="text-align:center;">
+      <div style="font-size:13px;font-weight:600;" id="weekNumLabel">KW –</div>
+      <div style="font-size:11px;color:#99f6e4;" id="weekRangeLabel"></div>
+    </div>
+    <button class="iconbtn" id="nextWeek" aria-label="Nächste Woche">›</button>
+  </div>
+</header>
+
+<main id="daysContainer"></main>
+
+<footer>
+  <div class="footer-inner">
+    <div class="totalrow">
+      <span class="label">Wochensumme</span>
+      <span class="value" id="weekTotal">00:00 Std.</span>
+    </div>
+    <div class="error" id="sendError"></div>
+    <a href="#" class="btn-primary" id="sendMailBtn">✉️ Per E-Mail senden</a>
+    <button class="btn-ghost" id="copyBtn">⧉ E-Mail-Text kopieren (falls sich keine Mail-App öffnet)</button>
+    <div class="note" id="copyNote"></div>
+    <button class="btn-ghost" id="csvBtn">⬇ CSV-Datei herunterladen (öffnet sich in Excel)</button>
+  </div>
+</footer>
+
+<div class="overlay" id="adminOverlay">
+  <div class="sheet" id="sheet">
+    <div class="sheet-head">
+      <h2 style="font-size:16px;">Adminbereich</h2>
+      <button class="iconbtn" style="color:#292524;" id="closeAdmin">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div><label>Vorname</label><input id="fVorname" type="text"></div>
+      <div><label>Name</label><input id="fNachname" type="text"></div>
+      <div><label>Personalnummer</label><input id="fPersonalnummer" type="text"></div>
+      <div><label>E-Mail Empfänger (Arbeitgeber)</label><input id="fEmpfaenger" type="email"></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn-cancel" id="cancelAdmin">Abbrechen</button>
+      <button class="btn-save" id="saveAdmin">Speichern</button>
+    </div>
+    <div class="note" id="adminNote" style="padding-bottom:12px;"></div>
+  </div>
+</div>
+
+<script>
+const DAY_LABELS = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
+const STORAGE_PREFIX = "stundenzettel_";
+
+function pad(n){ return String(n).padStart(2,"0"); }
+function toISODate(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function getMonday(date){
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day===0 ? -6 : 1-day;
+  d.setDate(d.getDate()+diff);
+  d.setHours(0,0,0,0);
+  return d;
+}
+function getISOWeekNumber(date){
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = (d.getUTCDay()+6)%7;
+  d.setUTCDate(d.getUTCDate()-dayNum+3);
+  const firstThursday = new Date(Date.UTC(d.getUTCFullYear(),0,4));
+  const firstDayNum = (firstThursday.getUTCDay()+6)%7;
+  firstThursday.setUTCDate(firstThursday.getUTCDate()-firstDayNum+3);
+  const week = 1 + Math.round((d-firstThursday)/(7*24*3600*1000));
+  return { year: d.getUTCFullYear(), week };
+}
+function timeToMinutes(t){
+  if(!t) return null;
+  const parts = t.split(":");
+  const h = Number(parts[0]), m = Number(parts[1]);
+  if(Number.isNaN(h)||Number.isNaN(m)) return null;
+  return h*60+m;
+}
+function computeDailyMinutes(entry){
+  const start = timeToMinutes(entry.beginn);
+  const end = timeToMinutes(entry.ende);
+  const pause = Number(entry.pause)||0;
+  if(start===null||end===null) return 0;
+  let diff = end-start;
+  if(diff<0) diff += 24*60;
+  const total = diff-pause;
+  return total>0?total:0;
+}
+function formatMinutes(min){
+  const h = Math.floor(min/60), m = min%60;
+  return `${pad(h)}:${pad(m)}`;
+}
+function emptyEntries(){
+  return Array.from({length:7},()=>({beginn:"",ende:"",pause:"",projekt:""}));
+}
+
+let state = {
+  weekStart: getMonday(new Date()),
+  entries: emptyEntries(),
+  admin: { vorname:"", nachname:"", personalnummer:"", empfaengerEmail:"" }
+};
+
+function loadAdmin(){
+  try {
+    const raw = localStorage.getItem(STORAGE_PREFIX+"admin");
+    if(raw) state.admin = JSON.parse(raw);
+  } catch(e){ console.error("Adminbereich konnte nicht geladen werden", e); }
+}
+function weekKey(){
+  return STORAGE_PREFIX+"woche_"+toISODate(state.weekStart);
+}
+function loadWeek(){
+  try {
+    const raw = localStorage.getItem(weekKey());
+    state.entries = raw ? JSON.parse(raw) : emptyEntries();
+  } catch(e){ state.entries = emptyEntries(); }
+}
+function saveWeek(){
+  try { localStorage.setItem(weekKey(), JSON.stringify(state.entries)); }
+  catch(e){ console.error("Woche konnte nicht gespeichert werden", e); }
+}
+
+function dayDates(){
+  return Array.from({length:7},(_,i)=>{
+    const d = new Date(state.weekStart);
+    d.setDate(state.weekStart.getDate()+i);
+    return d;
+  });
+}
+
+function renderWeekHeader(){
+  const {year, week} = getISOWeekNumber(state.weekStart);
+  const dates = dayDates();
+  document.getElementById("weekNumLabel").textContent = `KW ${week} / ${year}`;
+  document.getElementById("weekRangeLabel").textContent =
+    `${pad(dates[0].getDate())}.${pad(dates[0].getMonth()+1)}. – ${pad(dates[6].getDate())}.${pad(dates[6].getMonth()+1)}.${dates[6].getFullYear()}`;
+}
+
+function renderDays(){
+  const dates = dayDates();
+  const container = document.getElementById("daysContainer");
+  container.innerHTML = dates.map((d,i)=>{
+    const e = state.entries[i];
+    return `
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="day-name">${DAY_LABELS[i]}</div>
+            <div class="day-date">${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}</div>
+          </div>
+          <span class="day-total" id="total-${i}">${formatMinutes(computeDailyMinutes(e))} Std.</span>
+        </div>
+        <div class="fields">
+          <div class="field">
+            <label>Beginn</label>
+            <input type="time" data-day="${i}" data-field="beginn" value="${e.beginn||""}">
+          </div>
+          <div class="field">
+            <label>Ende</label>
+            <input type="time" data-day="${i}" data-field="ende" value="${e.ende||""}">
+          </div>
+          <div class="field">
+            <label>Pause (Min)</label>
+            <input type="number" min="0" step="5" placeholder="0" data-day="${i}" data-field="pause" value="${e.pause||""}">
+          </div>
+        </div>
+        <div class="field" style="margin-top:8px;">
+          <label>Projekt</label>
+          <input type="text" data-day="${i}" data-field="projekt" value="${e.projekt||""}" placeholder="z. B. Musterstraße 12">
+        </div>
+      </div>`;
+  }).join("");
+  updateWeekTotal();
+  updateSendLink();
+}
+
+function updateWeekTotal(){
+  const total = state.entries.reduce((sum,e)=>sum+computeDailyMinutes(e),0);
+  document.getElementById("weekTotal").textContent = formatMinutes(total)+" Std.";
+}
+
+function buildBodyText(){
+  const {year, week} = getISOWeekNumber(state.weekStart);
+  const dates = dayDates();
+  const lines = [];
+  lines.push(`Stundenuebersicht KW ${week}/${year}`);
+  lines.push(`${state.admin.vorname} ${state.admin.nachname}${state.admin.personalnummer ? " (Personalnr. "+state.admin.personalnummer+")" : ""}`);
+  lines.push("");
+  lines.push("Tag          Beginn  Ende   Pause   Gesamt  Projekt");
+  dates.forEach((d,i)=>{
+    const e = state.entries[i];
+    const tag = DAY_LABELS[i].padEnd(12," ");
+    const beginn = (e.beginn||"--:--").padEnd(7," ");
+    const ende = (e.ende||"--:--").padEnd(6," ");
+    const pause = ((e.pause||"0")+" Min").padEnd(7," ");
+    const gesamt = formatMinutes(computeDailyMinutes(e)).padEnd(7," ");
+    const projekt = e.projekt || "";
+    lines.push(`${tag} ${beginn} ${ende} ${pause} ${gesamt} ${projekt}`);
+  });
+  lines.push("");
+  const total = state.entries.reduce((sum,e)=>sum+computeDailyMinutes(e),0);
+  lines.push(`Wochensumme: ${formatMinutes(total)} Std.`);
+  return lines.join("\n");
+}
+
+function updateSendLink(){
+  const {year, week} = getISOWeekNumber(state.weekStart);
+  const subject = `Stundenuebersicht KW ${week}/${year} - ${state.admin.vorname} ${state.admin.nachname}`;
+  const body = buildBodyText();
+  const link = document.getElementById("sendMailBtn");
+  if(state.admin.empfaengerEmail){
+    link.href = `mailto:${encodeURIComponent(state.admin.empfaengerEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  } else {
+    link.href = "#";
+  }
+}
+
+document.getElementById("daysContainer").addEventListener("input", (ev)=>{
+  const t = ev.target;
+  if(t.dataset && t.dataset.day !== undefined){
+    const i = Number(t.dataset.day);
+    const field = t.dataset.field;
+    state.entries[i][field] = t.value;
+    saveWeek();
+    document.getElementById(`total-${i}`).textContent = formatMinutes(computeDailyMinutes(state.entries[i]))+" Std.";
+    updateWeekTotal();
+    updateSendLink();
+  }
+});
+
+document.getElementById("prevWeek").addEventListener("click", ()=>{
+  const next = new Date(state.weekStart);
+  next.setDate(next.getDate()-7);
+  state.weekStart = getMonday(next);
+  loadWeek();
+  renderWeekHeader();
+  renderDays();
+});
+document.getElementById("nextWeek").addEventListener("click", ()=>{
+  const next = new Date(state.weekStart);
+  next.setDate(next.getDate()+7);
+  state.weekStart = getMonday(next);
+  loadWeek();
+  renderWeekHeader();
+  renderDays();
+});
+
+const menuBtn = document.getElementById("menuBtn");
+const menu = document.getElementById("menu");
+menuBtn.addEventListener("click",(e)=>{
+  e.stopPropagation();
+  menu.classList.toggle("open");
+});
+document.addEventListener("click", ()=> menu.classList.remove("open"));
+document.getElementById("sheet").addEventListener("click",(e)=> e.stopPropagation());
+
+const adminOverlay = document.getElementById("adminOverlay");
+function openAdmin(){
+  document.getElementById("fVorname").value = state.admin.vorname||"";
+  document.getElementById("fNachname").value = state.admin.nachname||"";
+  document.getElementById("fPersonalnummer").value = state.admin.personalnummer||"";
+  document.getElementById("fEmpfaenger").value = state.admin.empfaengerEmail||"";
+  document.getElementById("adminNote").style.display="none";
+  adminOverlay.classList.add("open");
+}
+function closeAdmin(){ adminOverlay.classList.remove("open"); }
+document.getElementById("adminMenuBtn").addEventListener("click", ()=>{ menu.classList.remove("open"); openAdmin(); });
+document.getElementById("closeAdmin").addEventListener("click", closeAdmin);
+document.getElementById("cancelAdmin").addEventListener("click", closeAdmin);
+adminOverlay.addEventListener("click", closeAdmin);
+
+document.getElementById("saveAdmin").addEventListener("click", ()=>{
+  const draft = {
+    vorname: document.getElementById("fVorname").value.trim(),
+    nachname: document.getElementById("fNachname").value.trim(),
+    personalnummer: document.getElementById("fPersonalnummer").value.trim(),
+    empfaengerEmail: document.getElementById("fEmpfaenger").value.trim(),
+  };
+  const note = document.getElementById("adminNote");
+  try {
+    localStorage.setItem(STORAGE_PREFIX+"admin", JSON.stringify(draft));
+    state.admin = draft;
+    note.textContent = "Gespeichert";
+    note.style.color = "var(--teal-700)";
+    note.style.display = "block";
+    updateSendLink();
+    setTimeout(closeAdmin, 700);
+  } catch(e){
+    note.textContent = "Speichern fehlgeschlagen: "+(e.message||"unbekannter Fehler");
+    note.style.color = "var(--red-600)";
+    note.style.display = "block";
+  }
+});
+
+document.getElementById("sendMailBtn").addEventListener("click",(e)=>{
+  const errBox = document.getElementById("sendError");
+  if(!state.admin.empfaengerEmail){
+    e.preventDefault();
+    errBox.textContent = "Bitte zuerst die Empfänger-E-Mail im Adminbereich eintragen.";
+    errBox.style.display="block";
+    openAdmin();
+  } else {
+    errBox.style.display="none";
+  }
+});
+
+document.getElementById("copyBtn").addEventListener("click", async ()=>{
+  const {year, week} = getISOWeekNumber(state.weekStart);
+  const subject = `Stundenuebersicht KW ${week}/${year} - ${state.admin.vorname} ${state.admin.nachname}`;
+  const text = `An: ${state.admin.empfaengerEmail || "(keine Empfänger-E-Mail hinterlegt)"}\nBetreff: ${subject}\n\n${buildBodyText()}`;
+  const note = document.getElementById("copyNote");
+  let ok = false;
+  try {
+    await navigator.clipboard.writeText(text);
+    ok = true;
+  } catch(e){
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+    } catch(e2){ ok = false; }
+  }
+  note.textContent = ok ? "In Zwischenablage kopiert – jetzt in der Mail-App einfügen." : "Kopieren nicht möglich – bitte Text manuell markieren.";
+  note.style.display = "block";
+  setTimeout(()=> note.style.display="none", 2500);
+});
+
+document.getElementById("csvBtn").addEventListener("click", ()=>{
+  const {year, week} = getISOWeekNumber(state.weekStart);
+  const dates = dayDates();
+  const rows = [
+    ["Stundenübersicht"],
+    [`${state.admin.vorname} ${state.admin.nachname}`, state.admin.personalnummer?`Personalnr. ${state.admin.personalnummer}`:""],
+    [`KW ${week} / ${year}`],
+    [],
+    ["Tag","Datum","Beginn","Ende","Pause (Min)","Gesamt (Std)","Projekt"]
+  ];
+  dates.forEach((d,i)=>{
+    const e = state.entries[i];
+    rows.push([DAY_LABELS[i], toISODate(d), e.beginn||"", e.ende||"", e.pause||"0", formatMinutes(computeDailyMinutes(e)), e.projekt||""]);
+  });
+  rows.push([]);
+  const total = state.entries.reduce((sum,e)=>sum+computeDailyMinutes(e),0);
+  rows.push(["Wochensumme","","","","",formatMinutes(total),""]);
+  const csv = "\uFEFF" + rows.map(r => r.map(cell => {
+    const s = String(cell==null?"":cell);
+    return /[;\n"]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+  }).join(";")).join("\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Stundenzettel_${state.admin.nachname||"Mitarbeiter"}_KW${week}_${year}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 3000);
+});
+
+loadAdmin();
+loadWeek();
+renderWeekHeader();
+renderDays();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
