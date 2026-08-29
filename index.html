@@ -98,7 +98,8 @@
     <a href="#" class="btn-primary" id="sendMailBtn">✉️ Per E-Mail senden</a>
     <button class="btn-ghost" id="copyBtn">⧉ E-Mail-Text kopieren (falls sich keine Mail-App öffnet)</button>
     <div class="note" id="copyNote"></div>
-    <button class="btn-ghost" id="csvBtn">⬇ CSV-Datei herunterladen (öffnet sich in Excel)</button>
+    <button class="btn-ghost" id="shareExcelBtn">📎 Excel-Datei anhängen &amp; teilen</button>
+    <div class="note" id="shareNote"></div>
   </div>
 </footer>
 
@@ -122,6 +123,7 @@
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 const DAY_LABELS = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
 const STORAGE_PREFIX = "stundenzettel_";
@@ -407,7 +409,7 @@ document.getElementById("copyBtn").addEventListener("click", async ()=>{
   setTimeout(()=> note.style.display="none", 2500);
 });
 
-document.getElementById("csvBtn").addEventListener("click", ()=>{
+function buildWorkbookBlob(){
   const {year, week} = getISOWeekNumber(state.weekStart);
   const dates = dayDates();
   const rows = [
@@ -424,19 +426,51 @@ document.getElementById("csvBtn").addEventListener("click", ()=>{
   rows.push([]);
   const total = state.entries.reduce((sum,e)=>sum+computeDailyMinutes(e),0);
   rows.push(["Wochensumme","","","","",formatMinutes(total),""]);
-  const csv = "\uFEFF" + rows.map(r => r.map(cell => {
-    const s = String(cell==null?"":cell);
-    return /[;\n"]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
-  }).join(";")).join("\n");
-  const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws["!cols"] = [{wch:12},{wch:12},{wch:8},{wch:8},{wch:12},{wch:12},{wch:16}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Woche");
+  const wbout = XLSX.write(wb, {bookType:"xlsx", type:"array"});
+  const filename = `Stundenzettel_${state.admin.nachname||"Mitarbeiter"}_KW${week}_${year}.xlsx`;
+  const blob = new Blob([wbout], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  return {blob, filename};
+}
+
+function downloadBlob(blob, filename){
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
-  a.download = `Stundenzettel_${state.admin.nachname||"Mitarbeiter"}_KW${week}_${year}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(()=>URL.revokeObjectURL(url), 3000);
+}
+
+document.getElementById("shareExcelBtn").addEventListener("click", async ()=>{
+  const note = document.getElementById("shareNote");
+  if (typeof XLSX === "undefined"){
+    note.textContent = "Excel-Bibliothek konnte nicht geladen werden (Internetverbindung prüfen).";
+    note.style.color = "var(--red-600)";
+    note.style.display = "block";
+    return;
+  }
+  const {year, week} = getISOWeekNumber(state.weekStart);
+  const subject = `Stundenuebersicht KW ${week}/${year} - ${state.admin.vorname} ${state.admin.nachname}`;
+  const body = buildBodyText();
+  const {blob, filename} = buildWorkbookBlob();
+  const file = new File([blob], filename, {type: blob.type});
+
+  if (navigator.canShare && navigator.canShare({files:[file]})){
+    try {
+      await navigator.share({files:[file], title: subject, text: body});
+      return;
+    } catch(e){
+      if (e && e.name === "AbortError") return;
+    }
+  }
+  downloadBlob(blob, filename);
+  note.textContent = "Teilen mit Anhang wird hier nicht unterstützt – Excel-Datei wurde stattdessen heruntergeladen, bitte manuell anhängen.";
+  note.style.color = "var(--teal-700)";
+  note.style.display = "block";
+  setTimeout(()=> note.style.display="none", 4000);
 });
 
 loadAdmin();
