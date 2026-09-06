@@ -36,8 +36,12 @@
   .day-total { font-weight:600; font-size:14px; color:var(--teal-800); font-variant-numeric:tabular-nums; }
   .fields { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
   .field label { font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:var(--stone-500); display:block; margin-bottom:4px; }
-  .field input { width:100%; border:1px solid var(--stone-300); border-radius:8px; padding:7px 8px; font-size:14px; font-family:inherit; }
-  .field input:focus { outline:2px solid var(--teal-600); outline-offset:-1px; border-color:var(--teal-600); }
+  .field input, .field select { width:100%; border:1px solid var(--stone-300); border-radius:8px; padding:7px 8px; font-size:14px; font-family:inherit; background:#fff; }
+  .field input:focus, .field select:focus { outline:2px solid var(--teal-600); outline-offset:-1px; border-color:var(--teal-600); }
+  .field input:disabled { background:var(--stone-100); color:var(--stone-400); }
+  .status-badge { font-size:11px; font-weight:600; padding:2px 9px; border-radius:999px; white-space:nowrap; }
+  .day-error { font-size:12px; color:var(--red-600); margin-top:6px; }
+  .input-error { border-color:var(--red-600) !important; }
   footer { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid var(--stone-200); box-shadow:0 -2px 10px rgba(0,0,0,.06); }
   .footer-inner { max-width:480px; margin:0 auto; padding:12px 16px 16px; }
   .totalrow { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px; }
@@ -98,7 +102,7 @@
     <a href="#" class="btn-primary" id="sendMailBtn">✉️ Per E-Mail senden</a>
     <button class="btn-ghost" id="copyBtn">⧉ E-Mail-Text kopieren (falls sich keine Mail-App öffnet)</button>
     <div class="note" id="copyNote"></div>
-    <button class="btn-ghost" id="shareExcelBtn">📎 Datei anhängen &amp; teilen (CSV, öffnet in Excel)</button>
+    <button class="btn-ghost" id="shareExcelBtn">📎 Excel-Datei herunterladen</button>
     <div class="note" id="shareNote"></div>
   </div>
 </footer>
@@ -123,8 +127,15 @@
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 const DAY_LABELS = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
+const STATUS_META = {
+  urlaub:    { label: "Urlaub",              bg: "#ccfbf1", fg: "#0f766e" },
+  krankheit: { label: "Krankheit",           bg: "#fee2e2", fg: "#dc2626" },
+  feiertag:  { label: "Feiertag",            bg: "#fef3c7", fg: "#b45309" },
+  unbezahlt: { label: "Unbezahlter Urlaub",  bg: "#e7e5e4", fg: "#57534e" }
+};
 const STORAGE_PREFIX = "stundenzettel_";
 
 function pad(n){ return String(n).padStart(2,"0"); }
@@ -154,22 +165,26 @@ function timeToMinutes(t){
   if(Number.isNaN(h)||Number.isNaN(m)) return null;
   return h*60+m;
 }
-function computeDailyMinutes(entry){
+function computeDailyResult(entry){
+  if (entry.status) return { minutes: 0, error: null };
   const start = timeToMinutes(entry.beginn);
   const end = timeToMinutes(entry.ende);
-  const pause = Number(entry.pause)||0;
-  if(start===null||end===null) return 0;
-  let diff = end-start;
-  if(diff<0) diff += 24*60;
-  const total = diff-pause;
-  return total>0?total:0;
+  const pause = Number(entry.pause) || 0;
+  if (start === null || end === null) return { minutes: 0, error: null };
+  const diff = end - start;
+  if (diff < 0) return { minutes: 0, error: "Endzeit darf nicht vor der Beginnzeit liegen." };
+  const total = diff - pause;
+  return { minutes: total > 0 ? total : 0, error: null };
+}
+function computeDailyMinutes(entry){
+  return computeDailyResult(entry).minutes;
 }
 function formatMinutes(min){
   const h = Math.floor(min/60), m = min%60;
   return `${pad(h)}:${pad(m)}`;
 }
 function emptyEntries(){
-  return Array.from({length:7},()=>({beginn:"",ende:"",pause:"",projekt:""}));
+  return Array.from({length:7},()=>({beginn:"",ende:"",pause:"",projekt:"",status:""}));
 }
 
 let state = {
@@ -219,6 +234,9 @@ function renderDays(){
   const container = document.getElementById("daysContainer");
   container.innerHTML = dates.map((d,i)=>{
     const e = state.entries[i];
+    const result = computeDailyResult(e);
+    const disabled = e.status ? "disabled" : "";
+    const meta = e.status ? STATUS_META[e.status] : null;
     return `
       <div class="card">
         <div class="card-head">
@@ -226,25 +244,39 @@ function renderDays(){
             <div class="day-name">${DAY_LABELS[i]}</div>
             <div class="day-date">${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}</div>
           </div>
-          <span class="day-total" id="total-${i}">${formatMinutes(computeDailyMinutes(e))} Std.</span>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <span class="day-total" id="total-${i}">${formatMinutes(result.minutes)} Std.</span>
+            <span class="status-badge" id="status-badge-${i}" style="display:${meta?"inline-block":"none"};background:${meta?meta.bg:""};color:${meta?meta.fg:""};">${meta?meta.label:""}</span>
+          </div>
         </div>
         <div class="fields">
           <div class="field">
             <label>Beginn</label>
-            <input type="time" data-day="${i}" data-field="beginn" value="${e.beginn||""}">
+            <input type="time" data-day="${i}" data-field="beginn" value="${e.beginn||""}" ${disabled}>
           </div>
           <div class="field">
             <label>Ende</label>
-            <input type="time" data-day="${i}" data-field="ende" value="${e.ende||""}">
+            <input type="time" data-day="${i}" data-field="ende" value="${e.ende||""}" ${disabled} class="${result.error?"input-error":""}">
           </div>
           <div class="field">
             <label>Pause (Min)</label>
-            <input type="number" min="0" step="5" placeholder="0" data-day="${i}" data-field="pause" value="${e.pause||""}">
+            <input type="number" min="0" step="5" placeholder="0" data-day="${i}" data-field="pause" value="${e.pause||""}" ${disabled}>
           </div>
         </div>
+        <div class="day-error" id="error-${i}" style="display:${result.error?"block":"none"};">${result.error||""}</div>
         <div class="field" style="margin-top:8px;">
           <label>Projekt</label>
           <input type="text" data-day="${i}" data-field="projekt" value="${e.projekt||""}" placeholder="z. B. Musterstraße 12">
+        </div>
+        <div class="field" style="margin-top:8px;">
+          <label>Status</label>
+          <select data-day="${i}" data-field="status">
+            <option value="" ${!e.status?"selected":""}>Arbeitstag</option>
+            <option value="urlaub" ${e.status==="urlaub"?"selected":""}>Urlaub</option>
+            <option value="krankheit" ${e.status==="krankheit"?"selected":""}>Krankheit</option>
+            <option value="feiertag" ${e.status==="feiertag"?"selected":""}>Feiertag</option>
+            <option value="unbezahlt" ${e.status==="unbezahlt"?"selected":""}>Unbezahlter Urlaub</option>
+          </select>
         </div>
       </div>`;
   }).join("");
@@ -264,7 +296,7 @@ function buildBodyText(){
   lines.push(`Stundenuebersicht KW ${week}/${year}`);
   lines.push(`${state.admin.vorname} ${state.admin.nachname}${state.admin.personalnummer ? " (Personalnr. "+state.admin.personalnummer+")" : ""}`);
   lines.push("");
-  lines.push("Tag          Beginn  Ende   Pause   Gesamt  Projekt");
+  lines.push("Tag          Beginn  Ende   Pause   Gesamt  Projekt          Abwesenheitsgrund");
   dates.forEach((d,i)=>{
     const e = state.entries[i];
     const tag = DAY_LABELS[i].padEnd(12," ");
@@ -272,12 +304,20 @@ function buildBodyText(){
     const ende = (e.ende||"--:--").padEnd(6," ");
     const pause = ((e.pause||"0")+" Min").padEnd(7," ");
     const gesamt = formatMinutes(computeDailyMinutes(e)).padEnd(7," ");
-    const projekt = e.projekt || "";
-    lines.push(`${tag} ${beginn} ${ende} ${pause} ${gesamt} ${projekt}`);
+    const projekt = (e.projekt||"").padEnd(16," ");
+    const abwesenheit = e.status && STATUS_META[e.status] ? STATUS_META[e.status].label : "";
+    lines.push(`${tag} ${beginn} ${ende} ${pause} ${gesamt} ${projekt} ${abwesenheit}`);
   });
   lines.push("");
   const total = state.entries.reduce((sum,e)=>sum+computeDailyMinutes(e),0);
-  lines.push(`Wochensumme: ${formatMinutes(total)} Std.`);
+  lines.push(`Wochensumme Arbeitsstunden: ${formatMinutes(total)} Std.`);
+  const counts = { urlaub:0, krankheit:0, feiertag:0, unbezahlt:0 };
+  state.entries.forEach((e)=>{ if(e.status && counts.hasOwnProperty(e.status)) counts[e.status]++; });
+  const tagWort = (n)=> n===1 ? "Tag" : "Tage";
+  lines.push(`Wochensumme Urlaub: ${counts.urlaub} ${tagWort(counts.urlaub)}`);
+  lines.push(`Wochensumme Krankheit: ${counts.krankheit} ${tagWort(counts.krankheit)}`);
+  lines.push(`Wochensumme Feiertag: ${counts.feiertag} ${tagWort(counts.feiertag)}`);
+  lines.push(`Wochensumme Unbezahlter Urlaub: ${counts.unbezahlt} ${tagWort(counts.unbezahlt)}`);
   return lines.join("\n");
 }
 
@@ -293,6 +333,41 @@ function updateSendLink(){
   }
 }
 
+function refreshDayComputed(i){
+  const result = computeDailyResult(state.entries[i]);
+  document.getElementById(`total-${i}`).textContent = formatMinutes(result.minutes)+" Std.";
+  const errBox = document.getElementById(`error-${i}`);
+  const endeInput = document.querySelector(`input[data-day="${i}"][data-field="ende"]`);
+  if(result.error){
+    errBox.textContent = result.error;
+    errBox.style.display = "block";
+    if(endeInput) endeInput.classList.add("input-error");
+  } else {
+    errBox.style.display = "none";
+    if(endeInput) endeInput.classList.remove("input-error");
+  }
+}
+
+function applyStatusUI(i){
+  const beginnInput = document.querySelector(`input[data-day="${i}"][data-field="beginn"]`);
+  const endeInput = document.querySelector(`input[data-day="${i}"][data-field="ende"]`);
+  const pauseInput = document.querySelector(`input[data-day="${i}"][data-field="pause"]`);
+  const disable = !!state.entries[i].status;
+  [beginnInput, endeInput, pauseInput].forEach((el)=>{ if(el) el.disabled = disable; });
+  const badge = document.getElementById(`status-badge-${i}`);
+  const meta = STATUS_META[state.entries[i].status];
+  if(badge){
+    if(meta){
+      badge.textContent = meta.label;
+      badge.style.background = meta.bg;
+      badge.style.color = meta.fg;
+      badge.style.display = "inline-block";
+    } else {
+      badge.style.display = "none";
+    }
+  }
+}
+
 document.getElementById("daysContainer").addEventListener("input", (ev)=>{
   const t = ev.target;
   if(t.dataset && t.dataset.day !== undefined){
@@ -300,9 +375,13 @@ document.getElementById("daysContainer").addEventListener("input", (ev)=>{
     const field = t.dataset.field;
     state.entries[i][field] = t.value;
     saveWeek();
-    document.getElementById(`total-${i}`).textContent = formatMinutes(computeDailyMinutes(state.entries[i]))+" Std.";
+    refreshDayComputed(i);
     updateWeekTotal();
     updateSendLink();
+    if(field === "status"){
+      applyStatusUI(i);
+      refreshDayComputed(i);
+    }
   }
 });
 
@@ -408,7 +487,7 @@ document.getElementById("copyBtn").addEventListener("click", async ()=>{
   setTimeout(()=> note.style.display="none", 2500);
 });
 
-function buildCsvBlob(){
+function buildWorkbookBlob(){
   const {year, week} = getISOWeekNumber(state.weekStart);
   const dates = dayDates();
   const rows = [
@@ -416,22 +495,34 @@ function buildCsvBlob(){
     [`${state.admin.vorname} ${state.admin.nachname}`, state.admin.personalnummer?`Personalnr. ${state.admin.personalnummer}`:""],
     [`KW ${week} / ${year}`],
     [],
-    ["Tag","Datum","Beginn","Ende","Pause (Min)","Gesamt (Std)","Projekt"]
+    ["Tag","Datum","Beginn","Ende","Pause (Min)","Gesamt (Std)","Projekt","Abwesenheitsgrund"]
   ];
   dates.forEach((d,i)=>{
     const e = state.entries[i];
-    rows.push([DAY_LABELS[i], toISODate(d), e.beginn||"", e.ende||"", e.pause||"0", formatMinutes(computeDailyMinutes(e)), e.projekt||""]);
+    const abwesenheit = e.status && STATUS_META[e.status] ? STATUS_META[e.status].label : "";
+    rows.push([DAY_LABELS[i], toISODate(d), e.beginn||"", e.ende||"", e.pause||"0", formatMinutes(computeDailyMinutes(e)), e.projekt||"", abwesenheit]);
   });
   rows.push([]);
   const total = state.entries.reduce((sum,e)=>sum+computeDailyMinutes(e),0);
-  rows.push(["Wochensumme","","","","",formatMinutes(total),""]);
-  const csv = "\uFEFF" + rows.map(r => r.map(cell => {
-    const s = String(cell==null?"":cell);
-    return /[;\n"]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
-  }).join(";")).join("\n");
-  const filename = `Stundenzettel_${state.admin.nachname||"Mitarbeiter"}_KW${week}_${year}.csv`;
-  const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
-  return {blob, filename};
+  rows.push(["Wochensumme Arbeitsstunden","","","","",formatMinutes(total),"",""]);
+  const counts = { urlaub:0, krankheit:0, feiertag:0, unbezahlt:0 };
+  state.entries.forEach((e)=>{ if(e.status && counts.hasOwnProperty(e.status)) counts[e.status]++; });
+  const tagWort = (n)=> n===1 ? "Tag" : "Tage";
+  rows.push([`Wochensumme Urlaub`, `${counts.urlaub} ${tagWort(counts.urlaub)}`]);
+  rows.push([`Wochensumme Krankheit`, `${counts.krankheit} ${tagWort(counts.krankheit)}`]);
+  rows.push([`Wochensumme Feiertag`, `${counts.feiertag} ${tagWort(counts.feiertag)}`]);
+  rows.push([`Wochensumme Unbezahlter Urlaub`, `${counts.unbezahlt} ${tagWort(counts.unbezahlt)}`]);
+  const filename = `Stundenzettel_${state.admin.nachname||"Mitarbeiter"}_KW${week}_${year}.xlsx`;
+
+  if (typeof XLSX === "undefined") return { blob: null, filename };
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws["!cols"] = [{wch:14},{wch:12},{wch:8},{wch:8},{wch:12},{wch:12},{wch:16},{wch:18}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Woche");
+  const wbout = XLSX.write(wb, {bookType:"xlsx", type:"array"});
+  const blob = new Blob([wbout], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  return { blob, filename };
 }
 
 function downloadBlob(blob, filename){
@@ -444,25 +535,33 @@ function downloadBlob(blob, filename){
 
 document.getElementById("shareExcelBtn").addEventListener("click", async ()=>{
   const note = document.getElementById("shareNote");
-  const {year, week} = getISOWeekNumber(state.weekStart);
-  const subject = `Stundenuebersicht KW ${week}/${year} - ${state.admin.vorname} ${state.admin.nachname}`;
-  const body = buildBodyText();
-  const {blob, filename} = buildCsvBlob();
-  const file = new File([blob], filename, {type: blob.type});
+  const {blob, filename} = buildWorkbookBlob();
+  if (!blob){
+    note.textContent = "Excel-Bibliothek konnte nicht geladen werden (Internetverbindung prüfen) – bitte erneut versuchen.";
+    note.style.color = "var(--red-600)";
+    note.style.display = "block";
+    return;
+  }
 
+  // Teilen mit Anhang nur als stille Zusatzoption versuchen - Chrome erlaubt das für .xlsx meist ohnehin nicht
+  const file = new File([blob], filename, {type: blob.type});
   if (navigator.canShare && navigator.canShare({files:[file]})){
     try {
-      await navigator.share({files:[file], title: subject, text: body});
+      const {year, week} = getISOWeekNumber(state.weekStart);
+      const subject = `Stundenuebersicht KW ${week}/${year} - ${state.admin.vorname} ${state.admin.nachname}`;
+      await navigator.share({files:[file], title: subject, text: buildBodyText()});
       return;
     } catch(e){
       if (e && e.name === "AbortError") return;
+      // sonst normal weiter zum Download
     }
   }
+
   downloadBlob(blob, filename);
-  note.textContent = "Teilen mit Anhang wird hier nicht unterstützt – Datei wurde stattdessen heruntergeladen, bitte manuell anhängen.";
+  note.textContent = `Datei "${filename}" heruntergeladen – jetzt in deiner Mail-App als Anhang auswählen.`;
   note.style.color = "var(--teal-700)";
   note.style.display = "block";
-  setTimeout(()=> note.style.display="none", 4000);
+  setTimeout(()=> note.style.display="none", 4500);
 });
 
 loadAdmin();
