@@ -25,10 +25,22 @@
   h1, h2 { font-family:'Space Grotesk',system-ui,sans-serif; margin:0; }
   header { background:var(--teal-900); color:#fff; position:sticky; top:0; z-index:20; box-shadow:0 2px 6px rgba(0,0,0,.15); }
   .topbar { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; }
-  .weekbar { display:flex; align-items:center; justify-content:space-between; padding:0 16px 12px; }
+  .monthbar { display:flex; align-items:center; justify-content:space-between; padding:0 16px 12px; }
   .iconbtn { background:none; border:none; color:#fff; padding:8px; border-radius:999px; cursor:pointer; font-size:16px; line-height:1; }
   .iconbtn:hover { background:rgba(255,255,255,.12); }
-  main { max-width:480px; margin:0 auto; padding:16px; padding-bottom:190px; }
+  main { max-width:480px; margin:0 auto; padding:16px; padding-bottom:200px; }
+
+  .cal-weekdays { display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:11px; color:var(--stone-500); margin-bottom:6px; text-transform:uppercase; letter-spacing:.03em; }
+  .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:18px; }
+  .cal-cell { aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; background:#fff; border:1px solid var(--stone-200); border-radius:10px; cursor:pointer; font-family:inherit; padding:2px; }
+  .cal-cell-out { opacity:.4; }
+  .cal-cell-today { border-color:var(--teal-700); border-width:2px; }
+  .cal-cell-error { border-color:var(--red-600); }
+  .cal-cell-selected { background:var(--teal-700); border-color:var(--teal-700); }
+  .cal-cell-selected .cal-daynum { color:#fff; }
+  .cal-daynum { font-size:13px; font-weight:600; color:var(--stone-800); }
+  .cal-value { font-size:10px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1; }
+
   .card { background:#fff; border:1px solid var(--stone-200); border-radius:14px; padding:14px 16px; margin-bottom:12px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
   .card-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
   .day-name { font-weight:600; font-size:14px; }
@@ -42,6 +54,7 @@
   .status-badge { font-size:11px; font-weight:600; padding:2px 9px; border-radius:999px; white-space:nowrap; }
   .day-error { font-size:12px; color:var(--red-600); margin-top:6px; }
   .input-error { border-color:var(--red-600) !important; }
+
   footer { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid var(--stone-200); box-shadow:0 -2px 10px rgba(0,0,0,.06); }
   .footer-inner { max-width:480px; margin:0 auto; padding:12px 16px 16px; }
   .totalrow { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px; }
@@ -53,9 +66,10 @@
   .btn-ghost:hover { color:var(--teal-700); }
   .note { text-align:center; font-size:12px; color:var(--teal-700); margin-bottom:6px; display:none; }
   .error { font-size:12px; color:var(--red-600); margin-bottom:8px; display:none; }
+
   .overlay { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:30; display:none; align-items:flex-end; justify-content:center; }
   .overlay.open { display:flex; }
-  .sheet { background:#fff; width:100%; max-width:420px; border-radius:16px 16px 0 0; }
+  .sheet { background:#fff; width:100%; max-width:420px; border-radius:16px 16px 0 0; max-height:85vh; overflow-y:auto; }
   .sheet-head { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--stone-200); }
   .sheet-body { padding:16px 20px; display:flex; flex-direction:column; gap:12px; }
   .sheet-body label { font-size:12px; color:var(--stone-500); display:block; margin-bottom:4px; }
@@ -63,6 +77,8 @@
   .sheet-foot { display:flex; gap:8px; padding:16px 20px; border-top:1px solid var(--stone-200); }
   .btn-cancel { flex:1; padding:11px; border-radius:10px; border:1px solid var(--stone-300); background:#fff; color:var(--stone-500); font-weight:600; cursor:pointer; font-family:inherit; }
   .btn-save { flex:1; padding:11px; border-radius:10px; border:none; background:var(--teal-700); color:#fff; font-weight:600; cursor:pointer; font-family:inherit; }
+  .issue-list { margin:0; padding-left:18px; font-size:13px; color:var(--red-600); display:flex; flex-direction:column; gap:4px; }
+
   .menu { position:absolute; right:0; top:44px; background:#fff; border:1px solid var(--stone-200); border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,.12); overflow:hidden; display:none; z-index:25; min-width:180px; }
   .menu.open { display:block; }
   .menu button { width:100%; text-align:left; padding:12px 16px; background:none; border:none; font-size:14px; display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--stone-800); font-family:inherit; }
@@ -80,23 +96,28 @@
       </div>
     </div>
   </div>
-  <div class="weekbar">
-    <button class="iconbtn" id="prevWeek" aria-label="Vorherige Woche">‹</button>
+  <div class="monthbar">
+    <button class="iconbtn" id="prevMonth" aria-label="Vorheriger Monat">‹</button>
     <div style="text-align:center;">
-      <div style="font-size:13px;font-weight:600;" id="weekNumLabel">KW –</div>
-      <div style="font-size:11px;color:#99f6e4;" id="weekRangeLabel"></div>
+      <div style="font-size:15px;font-weight:600;" id="monthLabel">Monat –</div>
     </div>
-    <button class="iconbtn" id="nextWeek" aria-label="Nächste Woche">›</button>
+    <button class="iconbtn" id="nextMonth" aria-label="Nächster Monat">›</button>
   </div>
 </header>
 
-<main id="daysContainer"></main>
+<main>
+  <div class="cal-weekdays">
+    <div>Mo</div><div>Di</div><div>Mi</div><div>Do</div><div>Fr</div><div>Sa</div><div>So</div>
+  </div>
+  <div class="cal-grid" id="calendarGrid"></div>
+  <div id="dayEditor"></div>
+</main>
 
 <footer>
   <div class="footer-inner">
     <div class="totalrow">
-      <span class="label">Wochensumme</span>
-      <span class="value" id="weekTotal">00:00 Std.</span>
+      <span class="label">Monatssumme</span>
+      <span class="value" id="monthTotal">00:00 Std.</span>
     </div>
     <div class="error" id="sendError"></div>
     <a href="#" class="btn-primary" id="sendMailBtn">✉️ Per E-Mail senden</a>
@@ -108,7 +129,7 @@
 </footer>
 
 <div class="overlay" id="adminOverlay">
-  <div class="sheet" id="sheet">
+  <div class="sheet" id="adminSheet">
     <div class="sheet-head">
       <h2 style="font-size:16px;">Adminbereich</h2>
       <button class="iconbtn" style="color:#292524;" id="closeAdmin">✕</button>
@@ -127,37 +148,41 @@
   </div>
 </div>
 
+<div class="overlay" id="confirmOverlay">
+  <div class="sheet" id="confirmSheet">
+    <div class="sheet-head">
+      <h2 style="font-size:16px;">Bitte kurz prüfen</h2>
+      <button class="iconbtn" style="color:#292524;" id="closeConfirm">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div id="confirmMessage" style="font-size:14px;"></div>
+      <ul class="issue-list" id="confirmIssueList"></ul>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn-cancel" id="confirmCancel">Abbrechen</button>
+      <button class="btn-save" id="confirmProceed">Trotzdem fortfahren</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 const DAY_LABELS = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
+const MONTH_NAMES = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
 const STATUS_META = {
-  urlaub:    { label: "Urlaub",              bg: "#ccfbf1", fg: "#0f766e" },
+  urlaub:    { label: "Urlaub",              bg: "#fef9c3", fg: "#ca8a04" },
   krankheit: { label: "Krankheit",           bg: "#fee2e2", fg: "#dc2626" },
-  feiertag:  { label: "Feiertag",            bg: "#fef3c7", fg: "#b45309" },
+  feiertag:  { label: "Feiertag",            bg: "#dbeafe", fg: "#2563eb" },
   unbezahlt: { label: "Unbezahlter Urlaub",  bg: "#e7e5e4", fg: "#57534e" }
 };
+const WORK_META = { bg: "#dcfce7", fg: "#16a34a" };
+const STATUS_ABBR = { urlaub: "U", krankheit: "K", feiertag: "F", unbezahlt: "UU" };
 const STORAGE_PREFIX = "stundenzettel_";
 
 function pad(n){ return String(n).padStart(2,"0"); }
 function toISODate(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
-function getMonday(date){
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = day===0 ? -6 : 1-day;
-  d.setDate(d.getDate()+diff);
-  d.setHours(0,0,0,0);
-  return d;
-}
-function getISOWeekNumber(date){
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = (d.getUTCDay()+6)%7;
-  d.setUTCDate(d.getUTCDate()-dayNum+3);
-  const firstThursday = new Date(Date.UTC(d.getUTCFullYear(),0,4));
-  const firstDayNum = (firstThursday.getUTCDay()+6)%7;
-  firstThursday.setUTCDate(firstThursday.getUTCDate()-firstDayNum+3);
-  const week = 1 + Math.round((d-firstThursday)/(7*24*3600*1000));
-  return { year: d.getUTCFullYear(), week };
-}
+function weekdayIndex(d){ return (d.getDay()+6)%7; } // Montag=0..Sonntag=6
+
 function timeToMinutes(t){
   if(!t) return null;
   const parts = t.split(":");
@@ -176,22 +201,58 @@ function computeDailyResult(entry){
   const total = diff - pause;
   return { minutes: total > 0 ? total : 0, error: null };
 }
-function computeDailyMinutes(entry){
-  return computeDailyResult(entry).minutes;
-}
+function computeDailyMinutes(entry){ return computeDailyResult(entry).minutes; }
 function formatMinutes(min){
   const h = Math.floor(min/60), m = min%60;
   return `${pad(h)}:${pad(m)}`;
 }
-function emptyEntries(){
-  return Array.from({length:7},()=>({beginn:"",ende:"",pause:"",projekt:"",status:""}));
+function formatMinutesCompact(min){
+  const h = Math.floor(min/60), m = min%60;
+  return `${h}:${pad(m)}`;
+}
+function emptyEntry(){ return { beginn:"", ende:"", pause:"", projekt:"", status:"" }; }
+
+function dayKey(ds){ return STORAGE_PREFIX+"tag_"+ds; }
+function loadDayEntry(ds){
+  try {
+    const raw = localStorage.getItem(dayKey(ds));
+    return raw ? JSON.parse(raw) : emptyEntry();
+  } catch(e){ return emptyEntry(); }
+}
+function saveDayEntry(ds, entry){
+  try { localStorage.setItem(dayKey(ds), JSON.stringify(entry)); }
+  catch(e){ console.error("Tag konnte nicht gespeichert werden", e); }
 }
 
-let state = {
-  weekStart: getMonday(new Date()),
-  entries: emptyEntries(),
-  admin: { vorname:"", nachname:"", personalnummer:"", empfaengerEmail:"" }
-};
+// Alte Wochen-Daten (Vorgängerversion) einmalig in das neue Tagesformat übernehmen
+function migrateOldWeekData(){
+  try {
+    const prefix = STORAGE_PREFIX+"woche_";
+    const keys = [];
+    for (let i=0; i<localStorage.length; i++){
+      const k = localStorage.key(i);
+      if (k && k.indexOf(prefix) === 0) keys.push(k);
+    }
+    keys.forEach((k)=>{
+      const mondayStr = k.substring(prefix.length);
+      const monday = new Date(mondayStr+"T00:00:00");
+      if (isNaN(monday.getTime())) return;
+      let entries;
+      try { entries = JSON.parse(localStorage.getItem(k)); } catch(e){ return; }
+      if (!Array.isArray(entries)) return;
+      entries.forEach((entry, i)=>{
+        const d = new Date(monday);
+        d.setDate(monday.getDate()+i);
+        const ds = toISODate(d);
+        if (!localStorage.getItem(dayKey(ds))){
+          const normalized = { beginn:entry.beginn||"", ende:entry.ende||"", pause:entry.pause||"", projekt:entry.projekt||"", status:entry.status||"" };
+          const hasData = normalized.beginn || normalized.ende || normalized.pause || normalized.projekt || normalized.status;
+          if (hasData) saveDayEntry(ds, normalized);
+        }
+      });
+    });
+  } catch(e){ console.error("Migration fehlgeschlagen", e); }
+}
 
 function loadAdmin(){
   try {
@@ -199,217 +260,190 @@ function loadAdmin(){
     if(raw) state.admin = JSON.parse(raw);
   } catch(e){ console.error("Adminbereich konnte nicht geladen werden", e); }
 }
-function weekKey(){
-  return STORAGE_PREFIX+"woche_"+toISODate(state.weekStart);
+
+let state = { admin: { vorname:"", nachname:"", personalnummer:"", empfaengerEmail:"" } };
+let viewMonth = new Date(); viewMonth.setDate(1); viewMonth.setHours(0,0,0,0);
+let selectedDate = toISODate(new Date());
+
+function getCalendarCells(monthDate){
+  const year = monthDate.getFullYear(), month = monthDate.getMonth();
+  const firstOfMonth = new Date(year, month, 1);
+  const lastOfMonth = new Date(year, month+1, 0);
+  const offset = weekdayIndex(firstOfMonth);
+  const totalCells = Math.ceil((offset + lastOfMonth.getDate()) / 7) * 7;
+  const gridStart = new Date(firstOfMonth);
+  gridStart.setDate(firstOfMonth.getDate() - offset);
+  const cells = [];
+  for (let i=0; i<totalCells; i++){
+    const d = new Date(gridStart);
+    d.setDate(gridStart.getDate()+i);
+    cells.push({ date:d, inMonth: d.getMonth()===month });
+  }
+  return cells;
 }
-function loadWeek(){
-  try {
-    const raw = localStorage.getItem(weekKey());
-    state.entries = raw ? JSON.parse(raw) : emptyEntries();
-  } catch(e){ state.entries = emptyEntries(); }
-}
-function saveWeek(){
-  try { localStorage.setItem(weekKey(), JSON.stringify(state.entries)); }
-  catch(e){ console.error("Woche konnte nicht gespeichert werden", e); }
+function getMonthDates(monthDate){
+  const year = monthDate.getFullYear(), month = monthDate.getMonth();
+  const last = new Date(year, month+1, 0).getDate();
+  const dates = [];
+  for (let day=1; day<=last; day++) dates.push(new Date(year, month, day));
+  return dates;
 }
 
-function dayDates(){
-  return Array.from({length:7},(_,i)=>{
-    const d = new Date(state.weekStart);
-    d.setDate(state.weekStart.getDate()+i);
-    return d;
-  });
+function renderMonthHeader(){
+  document.getElementById("monthLabel").textContent = `${MONTH_NAMES[viewMonth.getMonth()]} ${viewMonth.getFullYear()}`;
 }
 
-function renderWeekHeader(){
-  const {year, week} = getISOWeekNumber(state.weekStart);
-  const dates = dayDates();
-  document.getElementById("weekNumLabel").textContent = `KW ${week} / ${year}`;
-  document.getElementById("weekRangeLabel").textContent =
-    `${pad(dates[0].getDate())}.${pad(dates[0].getMonth()+1)}. – ${pad(dates[6].getDate())}.${pad(dates[6].getMonth()+1)}.${dates[6].getFullYear()}`;
-}
-
-function renderDays(){
-  const dates = dayDates();
-  const container = document.getElementById("daysContainer");
-  container.innerHTML = dates.map((d,i)=>{
-    const e = state.entries[i];
-    const result = computeDailyResult(e);
-    const disabled = e.status ? "disabled" : "";
-    const meta = e.status ? STATUS_META[e.status] : null;
-    return `
-      <div class="card">
-        <div class="card-head">
-          <div>
-            <div class="day-name">${DAY_LABELS[i]}</div>
-            <div class="day-date">${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}</div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
-            <span class="day-total" id="total-${i}">${formatMinutes(result.minutes)} Std.</span>
-            <span class="status-badge" id="status-badge-${i}" style="display:${meta?"inline-block":"none"};background:${meta?meta.bg:""};color:${meta?meta.fg:""};">${meta?meta.label:""}</span>
-          </div>
-        </div>
-        <div class="fields">
-          <div class="field">
-            <label>Beginn</label>
-            <input type="time" data-day="${i}" data-field="beginn" value="${e.beginn||""}" ${disabled}>
-          </div>
-          <div class="field">
-            <label>Ende</label>
-            <input type="time" data-day="${i}" data-field="ende" value="${e.ende||""}" ${disabled} class="${result.error?"input-error":""}">
-          </div>
-          <div class="field">
-            <label>Pause (Min)</label>
-            <input type="number" min="0" step="5" placeholder="0" data-day="${i}" data-field="pause" value="${e.pause||""}" ${disabled}>
-          </div>
-        </div>
-        <div class="day-error" id="error-${i}" style="display:${result.error?"block":"none"};">${result.error||""}</div>
-        <div class="field" style="margin-top:8px;">
-          <label>Projekt</label>
-          <input type="text" data-day="${i}" data-field="projekt" value="${e.projekt||""}" placeholder="z. B. Musterstraße 12">
-        </div>
-        <div class="field" style="margin-top:8px;">
-          <label>Status</label>
-          <select data-day="${i}" data-field="status">
-            <option value="" ${!e.status?"selected":""}>Arbeitstag</option>
-            <option value="urlaub" ${e.status==="urlaub"?"selected":""}>Urlaub</option>
-            <option value="krankheit" ${e.status==="krankheit"?"selected":""}>Krankheit</option>
-            <option value="feiertag" ${e.status==="feiertag"?"selected":""}>Feiertag</option>
-            <option value="unbezahlt" ${e.status==="unbezahlt"?"selected":""}>Unbezahlter Urlaub</option>
-          </select>
-        </div>
-      </div>`;
+function renderCalendar(){
+  const cells = getCalendarCells(viewMonth);
+  const todayStr = toISODate(new Date());
+  const html = cells.map((c)=>{
+    const ds = toISODate(c.date);
+    const entry = loadDayEntry(ds);
+    const result = computeDailyResult(entry);
+    const meta = entry.status ? STATUS_META[entry.status] : null;
+    const classes = ["cal-cell"];
+    if(!c.inMonth) classes.push("cal-cell-out");
+    if(ds === selectedDate) classes.push("cal-cell-selected");
+    else if(ds === todayStr) classes.push("cal-cell-today");
+    if(result.error) classes.push("cal-cell-error");
+    let indicator = "";
+    let cellStyle = "";
+    if(ds !== selectedDate){
+      if(entry.status){
+        cellStyle = `background:${meta.bg};`;
+        indicator = `<span class="cal-value" style="color:${meta.fg}">${STATUS_ABBR[entry.status]||""}</span>`;
+      } else if(result.minutes > 0){
+        cellStyle = `background:${WORK_META.bg};`;
+        indicator = `<span class="cal-value" style="color:${WORK_META.fg}">${formatMinutesCompact(result.minutes)}</span>`;
+      }
+    }
+    return `<button type="button" class="${classes.join(" ")}" data-date="${ds}" style="${cellStyle}">
+      <span class="cal-daynum">${c.date.getDate()}</span>
+      ${indicator}
+    </button>`;
   }).join("");
-  updateWeekTotal();
+  document.getElementById("calendarGrid").innerHTML = html;
+}
+
+function renderDayEditor(){
+  const ds = selectedDate;
+  const d = new Date(ds+"T00:00:00");
+  const e = loadDayEntry(ds);
+  const result = computeDailyResult(e);
+  const disabled = e.status ? "disabled" : "";
+  const meta = e.status ? STATUS_META[e.status] : null;
+  document.getElementById("dayEditor").innerHTML = `
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="day-name">${DAY_LABELS[weekdayIndex(d)]}</div>
+          <div class="day-date">${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+          <span class="day-total" id="dayEditorTotal">${formatMinutes(result.minutes)} Std.</span>
+          <span class="status-badge" id="dayEditorBadge" style="display:${meta?"inline-block":"none"};background:${meta?meta.bg:""};color:${meta?meta.fg:""};">${meta?meta.label:""}</span>
+        </div>
+      </div>
+      <div class="fields">
+        <div class="field"><label>Beginn</label><input type="time" id="fBeginn" value="${e.beginn||""}" ${disabled}></div>
+        <div class="field"><label>Ende</label><input type="time" id="fEnde" value="${e.ende||""}" ${disabled} class="${result.error?"input-error":""}"></div>
+        <div class="field"><label>Pause (Min)</label><input type="number" min="0" step="5" placeholder="0" id="fPause" value="${e.pause||""}" ${disabled}></div>
+      </div>
+      <div class="day-error" id="dayEditorError" style="display:${result.error?"block":"none"};">${result.error||""}</div>
+      <div class="field" style="margin-top:8px;"><label>Projekt</label><input type="text" id="fProjekt" value="${e.projekt||""}" placeholder="z. B. Musterstraße 12"></div>
+      <div class="field" style="margin-top:8px;">
+        <label>Status</label>
+        <select id="fStatus">
+          <option value="" ${!e.status?"selected":""}>Arbeitstag</option>
+          <option value="urlaub" ${e.status==="urlaub"?"selected":""}>Urlaub</option>
+          <option value="krankheit" ${e.status==="krankheit"?"selected":""}>Krankheit</option>
+          <option value="feiertag" ${e.status==="feiertag"?"selected":""}>Feiertag</option>
+          <option value="unbezahlt" ${e.status==="unbezahlt"?"selected":""}>Unbezahlter Urlaub</option>
+        </select>
+      </div>
+      <div class="note" id="dayEditorNote">Gespeichert ✓</div>
+    </div>`;
+  ["fBeginn","fEnde","fPause","fProjekt"].forEach((id)=>{
+    document.getElementById(id).addEventListener("input", onDayFieldChange);
+  });
+  document.getElementById("fStatus").addEventListener("change", onDayFieldChange);
+}
+
+let savedNoteTimer = null;
+function onDayFieldChange(){
+  const entry = {
+    beginn: document.getElementById("fBeginn").value,
+    ende: document.getElementById("fEnde").value,
+    pause: document.getElementById("fPause").value,
+    projekt: document.getElementById("fProjekt").value,
+    status: document.getElementById("fStatus").value,
+  };
+  saveDayEntry(selectedDate, entry);
+
+  const result = computeDailyResult(entry);
+  document.getElementById("dayEditorTotal").textContent = formatMinutes(result.minutes)+" Std.";
+  const errBox = document.getElementById("dayEditorError");
+  const endeInput = document.getElementById("fEnde");
+  if(result.error){ errBox.textContent=result.error; errBox.style.display="block"; endeInput.classList.add("input-error"); }
+  else { errBox.style.display="none"; endeInput.classList.remove("input-error"); }
+
+  const disable = !!entry.status;
+  document.getElementById("fBeginn").disabled = disable;
+  document.getElementById("fEnde").disabled = disable;
+  document.getElementById("fPause").disabled = disable;
+
+  const badge = document.getElementById("dayEditorBadge");
+  const meta = STATUS_META[entry.status];
+  if(meta){ badge.textContent=meta.label; badge.style.background=meta.bg; badge.style.color=meta.fg; badge.style.display="inline-block"; }
+  else badge.style.display="none";
+
+  const note = document.getElementById("dayEditorNote");
+  note.style.display = "block";
+  clearTimeout(savedNoteTimer);
+  savedNoteTimer = setTimeout(()=>{ note.style.display="none"; }, 1200);
+
+  renderCalendar();
+  updateMonthTotal();
   updateSendLink();
 }
 
-function updateWeekTotal(){
-  const total = state.entries.reduce((sum,e)=>sum+computeDailyMinutes(e),0);
-  document.getElementById("weekTotal").textContent = formatMinutes(total)+" Std.";
-}
-
-function buildBodyText(){
-  const {year, week} = getISOWeekNumber(state.weekStart);
-  const dates = dayDates();
-  const lines = [];
-  lines.push(`Stundenuebersicht KW ${week}/${year}`);
-  lines.push(`${state.admin.vorname} ${state.admin.nachname}${state.admin.personalnummer ? " (Personalnr. "+state.admin.personalnummer+")" : ""}`);
-  lines.push("");
-  lines.push("Tag          Beginn  Ende   Pause   Gesamt  Projekt          Abwesenheitsgrund");
-  dates.forEach((d,i)=>{
-    const e = state.entries[i];
-    const tag = DAY_LABELS[i].padEnd(12," ");
-    const beginn = (e.beginn||"--:--").padEnd(7," ");
-    const ende = (e.ende||"--:--").padEnd(6," ");
-    const pause = ((e.pause||"0")+" Min").padEnd(7," ");
-    const gesamt = formatMinutes(computeDailyMinutes(e)).padEnd(7," ");
-    const projekt = (e.projekt||"").padEnd(16," ");
-    const abwesenheit = e.status && STATUS_META[e.status] ? STATUS_META[e.status].label : "";
-    lines.push(`${tag} ${beginn} ${ende} ${pause} ${gesamt} ${projekt} ${abwesenheit}`);
-  });
-  lines.push("");
-  const total = state.entries.reduce((sum,e)=>sum+computeDailyMinutes(e),0);
-  lines.push(`Wochensumme Arbeitsstunden: ${formatMinutes(total)} Std.`);
-  const counts = { urlaub:0, krankheit:0, feiertag:0, unbezahlt:0 };
-  state.entries.forEach((e)=>{ if(e.status && counts.hasOwnProperty(e.status)) counts[e.status]++; });
-  const tagWort = (n)=> n===1 ? "Tag" : "Tage";
-  lines.push(`Wochensumme Urlaub: ${counts.urlaub} ${tagWort(counts.urlaub)}`);
-  lines.push(`Wochensumme Krankheit: ${counts.krankheit} ${tagWort(counts.krankheit)}`);
-  lines.push(`Wochensumme Feiertag: ${counts.feiertag} ${tagWort(counts.feiertag)}`);
-  lines.push(`Wochensumme Unbezahlter Urlaub: ${counts.unbezahlt} ${tagWort(counts.unbezahlt)}`);
-  return lines.join("\n");
-}
-
-function updateSendLink(){
-  const {year, week} = getISOWeekNumber(state.weekStart);
-  const subject = `Stundenuebersicht KW ${week}/${year} - ${state.admin.vorname} ${state.admin.nachname}`;
-  const body = buildBodyText();
-  const link = document.getElementById("sendMailBtn");
-  if(state.admin.empfaengerEmail){
-    link.href = `mailto:${encodeURIComponent(state.admin.empfaengerEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  } else {
-    link.href = "#";
+function selectDate(ds){
+  const d = new Date(ds+"T00:00:00");
+  if(d.getMonth() !== viewMonth.getMonth() || d.getFullYear() !== viewMonth.getFullYear()){
+    viewMonth = new Date(d.getFullYear(), d.getMonth(), 1);
   }
+  selectedDate = ds;
+  renderMonthHeader();
+  renderCalendar();
+  renderDayEditor();
+  updateMonthTotal();
+  updateSendLink();
 }
 
-function refreshDayComputed(i){
-  const result = computeDailyResult(state.entries[i]);
-  document.getElementById(`total-${i}`).textContent = formatMinutes(result.minutes)+" Std.";
-  const errBox = document.getElementById(`error-${i}`);
-  const endeInput = document.querySelector(`input[data-day="${i}"][data-field="ende"]`);
-  if(result.error){
-    errBox.textContent = result.error;
-    errBox.style.display = "block";
-    if(endeInput) endeInput.classList.add("input-error");
-  } else {
-    errBox.style.display = "none";
-    if(endeInput) endeInput.classList.remove("input-error");
-  }
+function updateMonthTotal(){
+  const total = getMonthDates(viewMonth).reduce((sum,d)=>sum+computeDailyMinutes(loadDayEntry(toISODate(d))),0);
+  document.getElementById("monthTotal").textContent = formatMinutes(total)+" Std.";
 }
 
-function applyStatusUI(i){
-  const beginnInput = document.querySelector(`input[data-day="${i}"][data-field="beginn"]`);
-  const endeInput = document.querySelector(`input[data-day="${i}"][data-field="ende"]`);
-  const pauseInput = document.querySelector(`input[data-day="${i}"][data-field="pause"]`);
-  const disable = !!state.entries[i].status;
-  [beginnInput, endeInput, pauseInput].forEach((el)=>{ if(el) el.disabled = disable; });
-  const badge = document.getElementById(`status-badge-${i}`);
-  const meta = STATUS_META[state.entries[i].status];
-  if(badge){
-    if(meta){
-      badge.textContent = meta.label;
-      badge.style.background = meta.bg;
-      badge.style.color = meta.fg;
-      badge.style.display = "inline-block";
-    } else {
-      badge.style.display = "none";
-    }
-  }
-}
-
-document.getElementById("daysContainer").addEventListener("input", (ev)=>{
-  const t = ev.target;
-  if(t.dataset && t.dataset.day !== undefined){
-    const i = Number(t.dataset.day);
-    const field = t.dataset.field;
-    state.entries[i][field] = t.value;
-    saveWeek();
-    refreshDayComputed(i);
-    updateWeekTotal();
-    updateSendLink();
-    if(field === "status"){
-      applyStatusUI(i);
-      refreshDayComputed(i);
-    }
-  }
+document.getElementById("calendarGrid").addEventListener("click",(ev)=>{
+  const btn = ev.target.closest(".cal-cell");
+  if(!btn) return;
+  selectDate(btn.dataset.date);
 });
-
-document.getElementById("prevWeek").addEventListener("click", ()=>{
-  const next = new Date(state.weekStart);
-  next.setDate(next.getDate()-7);
-  state.weekStart = getMonday(next);
-  loadWeek();
-  renderWeekHeader();
-  renderDays();
+document.getElementById("prevMonth").addEventListener("click", ()=>{
+  const d = new Date(viewMonth); d.setMonth(d.getMonth()-1);
+  selectDate(toISODate(new Date(d.getFullYear(), d.getMonth(), 1)));
 });
-document.getElementById("nextWeek").addEventListener("click", ()=>{
-  const next = new Date(state.weekStart);
-  next.setDate(next.getDate()+7);
-  state.weekStart = getMonday(next);
-  loadWeek();
-  renderWeekHeader();
-  renderDays();
+document.getElementById("nextMonth").addEventListener("click", ()=>{
+  const d = new Date(viewMonth); d.setMonth(d.getMonth()+1);
+  selectDate(toISODate(new Date(d.getFullYear(), d.getMonth(), 1)));
 });
 
 const menuBtn = document.getElementById("menuBtn");
 const menu = document.getElementById("menu");
-menuBtn.addEventListener("click",(e)=>{
-  e.stopPropagation();
-  menu.classList.toggle("open");
-});
+menuBtn.addEventListener("click",(e)=>{ e.stopPropagation(); menu.classList.toggle("open"); });
 document.addEventListener("click", ()=> menu.classList.remove("open"));
-document.getElementById("sheet").addEventListener("click",(e)=> e.stopPropagation());
+document.getElementById("adminSheet").addEventListener("click",(e)=> e.stopPropagation());
 
 const adminOverlay = document.getElementById("adminOverlay");
 function openAdmin(){
@@ -449,21 +483,139 @@ document.getElementById("saveAdmin").addEventListener("click", ()=>{
   }
 });
 
+// ---- Monatsübersicht: Text für E-Mail, Datei-Export ----
+
+function buildBodyText(){
+  const dates = getMonthDates(viewMonth);
+  const lines = [];
+  lines.push(`Stundenuebersicht ${MONTH_NAMES[viewMonth.getMonth()]} ${viewMonth.getFullYear()}`);
+  lines.push(`${state.admin.vorname} ${state.admin.nachname}${state.admin.personalnummer ? " (Personalnr. "+state.admin.personalnummer+")" : ""}`);
+  lines.push("");
+  lines.push("Tag          Datum   Beginn  Ende   Pause   Gesamt  Projekt          Abwesenheitsgrund");
+  let totalMin = 0;
+  const counts = { urlaub:0, krankheit:0, feiertag:0, unbezahlt:0 };
+  dates.forEach((d)=>{
+    const ds = toISODate(d);
+    const e = loadDayEntry(ds);
+    const result = computeDailyResult(e);
+    totalMin += result.minutes;
+    if(e.status && counts.hasOwnProperty(e.status)) counts[e.status]++;
+    const tag = DAY_LABELS[weekdayIndex(d)].padEnd(12," ");
+    const datum = `${pad(d.getDate())}.${pad(d.getMonth()+1)}.`.padEnd(7," ");
+    const beginn = (e.beginn||"--:--").padEnd(7," ");
+    const ende = (e.ende||"--:--").padEnd(6," ");
+    const pause = ((e.pause||"0")+" Min").padEnd(7," ");
+    const gesamt = formatMinutes(result.minutes).padEnd(7," ");
+    const projekt = (e.projekt||"").padEnd(16," ");
+    const abwesenheit = e.status && STATUS_META[e.status] ? STATUS_META[e.status].label : "";
+    lines.push(`${tag} ${datum} ${beginn} ${ende} ${pause} ${gesamt} ${projekt} ${abwesenheit}`);
+  });
+  lines.push("");
+  lines.push(`Monatssumme Arbeitsstunden: ${formatMinutes(totalMin)} Std.`);
+  const tagWort = (n)=> n===1 ? "Tag" : "Tage";
+  lines.push(`Monatssumme Urlaub: ${counts.urlaub} ${tagWort(counts.urlaub)}`);
+  lines.push(`Monatssumme Krankheit: ${counts.krankheit} ${tagWort(counts.krankheit)}`);
+  lines.push(`Monatssumme Feiertag: ${counts.feiertag} ${tagWort(counts.feiertag)}`);
+  lines.push(`Monatssumme Unbezahlter Urlaub: ${counts.unbezahlt} ${tagWort(counts.unbezahlt)}`);
+  return lines.join("\n");
+}
+
+function updateSendLink(){
+  const subject = `Stundenuebersicht ${MONTH_NAMES[viewMonth.getMonth()]} ${viewMonth.getFullYear()} - ${state.admin.vorname} ${state.admin.nachname}`;
+  const body = buildBodyText();
+  const link = document.getElementById("sendMailBtn");
+  if(state.admin.empfaengerEmail){
+    link.href = `mailto:${encodeURIComponent(state.admin.empfaengerEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  } else {
+    link.href = "#";
+  }
+}
+
+// ---- Prüfung vor dem Versand/Export ----
+
+function validateMonthData(){
+  const dates = getMonthDates(viewMonth);
+  const issues = [];
+  let hasAnyData = false;
+  dates.forEach((d)=>{
+    const ds = toISODate(d);
+    const e = loadDayEntry(ds);
+    const hasAny = e.beginn || e.ende || e.pause || e.projekt || e.status;
+    if(hasAny) hasAnyData = true;
+    const label = `${DAY_LABELS[weekdayIndex(d)]}, ${pad(d.getDate())}.${pad(d.getMonth()+1)}.`;
+    const result = computeDailyResult(e);
+    if(result.error){
+      issues.push(`${label}: ${result.error}`);
+      return;
+    }
+    if(!e.status){
+      if((e.beginn && !e.ende) || (!e.beginn && e.ende)){
+        issues.push(`${label}: Beginn oder Ende fehlt noch.`);
+      } else if(e.beginn && e.ende){
+        const start = timeToMinutes(e.beginn), end = timeToMinutes(e.ende), pause = Number(e.pause)||0;
+        if(end - start - pause < 0) issues.push(`${label}: Pause ist länger als die Arbeitszeit.`);
+      }
+    }
+  });
+  return { issues, hasAnyData };
+}
+
+let pendingAction = null;
+function openConfirm(message, issues){
+  document.getElementById("confirmMessage").textContent = message;
+  document.getElementById("confirmIssueList").innerHTML = issues.map(i=>`<li>${i}</li>`).join("");
+  document.getElementById("confirmOverlay").classList.add("open");
+}
+function closeConfirmOverlay(){
+  document.getElementById("confirmOverlay").classList.remove("open");
+  pendingAction = null;
+}
+document.getElementById("confirmProceed").addEventListener("click", ()=>{
+  const action = pendingAction;
+  document.getElementById("confirmOverlay").classList.remove("open");
+  pendingAction = null;
+  if(action) action();
+});
+document.getElementById("confirmCancel").addEventListener("click", closeConfirmOverlay);
+document.getElementById("closeConfirm").addEventListener("click", closeConfirmOverlay);
+document.getElementById("confirmOverlay").addEventListener("click", closeConfirmOverlay);
+document.getElementById("confirmSheet").addEventListener("click",(e)=>e.stopPropagation());
+
+function runWithValidation(actionFn){
+  const { issues, hasAnyData } = validateMonthData();
+  if(!hasAnyData){
+    pendingAction = actionFn;
+    openConfirm("Für diesen Monat wurden noch keine Stunden erfasst. Trotzdem fortfahren?", []);
+    return;
+  }
+  if(issues.length){
+    pendingAction = actionFn;
+    openConfirm("Es gibt noch offene Punkte für diesen Monat:", issues);
+    return;
+  }
+  actionFn();
+}
+
+// ---- E-Mail senden ----
+
 document.getElementById("sendMailBtn").addEventListener("click",(e)=>{
+  e.preventDefault();
   const errBox = document.getElementById("sendError");
   if(!state.admin.empfaengerEmail){
-    e.preventDefault();
     errBox.textContent = "Bitte zuerst die Empfänger-E-Mail im Adminbereich eintragen.";
     errBox.style.display="block";
     openAdmin();
-  } else {
-    errBox.style.display="none";
+    return;
   }
+  errBox.style.display="none";
+  runWithValidation(proceedWithMailSend);
 });
+function proceedWithMailSend(){
+  window.location.href = document.getElementById("sendMailBtn").href;
+}
 
 document.getElementById("copyBtn").addEventListener("click", async ()=>{
-  const {year, week} = getISOWeekNumber(state.weekStart);
-  const subject = `Stundenuebersicht KW ${week}/${year} - ${state.admin.vorname} ${state.admin.nachname}`;
+  const subject = `Stundenuebersicht ${MONTH_NAMES[viewMonth.getMonth()]} ${viewMonth.getFullYear()} - ${state.admin.vorname} ${state.admin.nachname}`;
   const text = `An: ${state.admin.empfaengerEmail || "(keine Empfänger-E-Mail hinterlegt)"}\nBetreff: ${subject}\n\n${buildBodyText()}`;
   const note = document.getElementById("copyNote");
   let ok = false;
@@ -487,39 +639,43 @@ document.getElementById("copyBtn").addEventListener("click", async ()=>{
   setTimeout(()=> note.style.display="none", 2500);
 });
 
+// ---- Excel-Export ----
+
 function buildWorkbookBlob(){
-  const {year, week} = getISOWeekNumber(state.weekStart);
-  const dates = dayDates();
+  const dates = getMonthDates(viewMonth);
   const rows = [
     ["Stundenübersicht"],
     [`${state.admin.vorname} ${state.admin.nachname}`, state.admin.personalnummer?`Personalnr. ${state.admin.personalnummer}`:""],
-    [`KW ${week} / ${year}`],
+    [`${MONTH_NAMES[viewMonth.getMonth()]} ${viewMonth.getFullYear()}`],
     [],
     ["Tag","Datum","Beginn","Ende","Pause (Min)","Gesamt (Std)","Projekt","Abwesenheitsgrund"]
   ];
-  dates.forEach((d,i)=>{
-    const e = state.entries[i];
+  let totalMin = 0;
+  const counts = { urlaub:0, krankheit:0, feiertag:0, unbezahlt:0 };
+  dates.forEach((d)=>{
+    const ds = toISODate(d);
+    const e = loadDayEntry(ds);
+    const result = computeDailyResult(e);
+    totalMin += result.minutes;
+    if(e.status && counts.hasOwnProperty(e.status)) counts[e.status]++;
     const abwesenheit = e.status && STATUS_META[e.status] ? STATUS_META[e.status].label : "";
-    rows.push([DAY_LABELS[i], toISODate(d), e.beginn||"", e.ende||"", e.pause||"0", formatMinutes(computeDailyMinutes(e)), e.projekt||"", abwesenheit]);
+    rows.push([DAY_LABELS[weekdayIndex(d)], ds, e.beginn||"", e.ende||"", e.pause||"0", formatMinutes(result.minutes), e.projekt||"", abwesenheit]);
   });
   rows.push([]);
-  const total = state.entries.reduce((sum,e)=>sum+computeDailyMinutes(e),0);
-  rows.push(["Wochensumme Arbeitsstunden","","","","",formatMinutes(total),"",""]);
-  const counts = { urlaub:0, krankheit:0, feiertag:0, unbezahlt:0 };
-  state.entries.forEach((e)=>{ if(e.status && counts.hasOwnProperty(e.status)) counts[e.status]++; });
+  rows.push(["Monatssumme Arbeitsstunden","","","","",formatMinutes(totalMin),"",""]);
   const tagWort = (n)=> n===1 ? "Tag" : "Tage";
-  rows.push([`Wochensumme Urlaub`, `${counts.urlaub} ${tagWort(counts.urlaub)}`]);
-  rows.push([`Wochensumme Krankheit`, `${counts.krankheit} ${tagWort(counts.krankheit)}`]);
-  rows.push([`Wochensumme Feiertag`, `${counts.feiertag} ${tagWort(counts.feiertag)}`]);
-  rows.push([`Wochensumme Unbezahlter Urlaub`, `${counts.unbezahlt} ${tagWort(counts.unbezahlt)}`]);
-  const filename = `Stundenzettel_${state.admin.nachname||"Mitarbeiter"}_KW${week}_${year}.xlsx`;
+  rows.push([`Monatssumme Urlaub`, `${counts.urlaub} ${tagWort(counts.urlaub)}`]);
+  rows.push([`Monatssumme Krankheit`, `${counts.krankheit} ${tagWort(counts.krankheit)}`]);
+  rows.push([`Monatssumme Feiertag`, `${counts.feiertag} ${tagWort(counts.feiertag)}`]);
+  rows.push([`Monatssumme Unbezahlter Urlaub`, `${counts.unbezahlt} ${tagWort(counts.unbezahlt)}`]);
+  const filename = `Stundenzettel_${state.admin.nachname||"Mitarbeiter"}_${MONTH_NAMES[viewMonth.getMonth()]}_${viewMonth.getFullYear()}.xlsx`;
 
   if (typeof XLSX === "undefined") return { blob: null, filename };
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws["!cols"] = [{wch:14},{wch:12},{wch:8},{wch:8},{wch:12},{wch:12},{wch:16},{wch:18}];
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Woche");
+  XLSX.utils.book_append_sheet(wb, ws, "Monat");
   const wbout = XLSX.write(wb, {bookType:"xlsx", type:"array"});
   const blob = new Blob([wbout], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
   return { blob, filename };
@@ -533,7 +689,10 @@ function downloadBlob(blob, filename){
   setTimeout(()=>URL.revokeObjectURL(url), 3000);
 }
 
-document.getElementById("shareExcelBtn").addEventListener("click", async ()=>{
+document.getElementById("shareExcelBtn").addEventListener("click", ()=>{
+  runWithValidation(proceedWithExcelDownload);
+});
+async function proceedWithExcelDownload(){
   const note = document.getElementById("shareNote");
   const {blob, filename} = buildWorkbookBlob();
   if (!blob){
@@ -543,17 +702,14 @@ document.getElementById("shareExcelBtn").addEventListener("click", async ()=>{
     return;
   }
 
-  // Teilen mit Anhang nur als stille Zusatzoption versuchen - Chrome erlaubt das für .xlsx meist ohnehin nicht
   const file = new File([blob], filename, {type: blob.type});
   if (navigator.canShare && navigator.canShare({files:[file]})){
     try {
-      const {year, week} = getISOWeekNumber(state.weekStart);
-      const subject = `Stundenuebersicht KW ${week}/${year} - ${state.admin.vorname} ${state.admin.nachname}`;
+      const subject = `Stundenuebersicht ${MONTH_NAMES[viewMonth.getMonth()]} ${viewMonth.getFullYear()} - ${state.admin.vorname} ${state.admin.nachname}`;
       await navigator.share({files:[file], title: subject, text: buildBodyText()});
       return;
     } catch(e){
       if (e && e.name === "AbortError") return;
-      // sonst normal weiter zum Download
     }
   }
 
@@ -562,12 +718,16 @@ document.getElementById("shareExcelBtn").addEventListener("click", async ()=>{
   note.style.color = "var(--teal-700)";
   note.style.display = "block";
   setTimeout(()=> note.style.display="none", 4500);
-});
+}
 
+// ---- Start ----
+migrateOldWeekData();
 loadAdmin();
-loadWeek();
-renderWeekHeader();
-renderDays();
+renderMonthHeader();
+renderCalendar();
+renderDayEditor();
+updateMonthTotal();
+updateSendLink();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
