@@ -28,7 +28,7 @@
   .monthbar { display:flex; align-items:center; justify-content:space-between; padding:0 16px 12px; }
   .iconbtn { background:none; border:none; color:#fff; padding:8px; border-radius:999px; cursor:pointer; font-size:16px; line-height:1; }
   .iconbtn:hover { background:rgba(255,255,255,.12); }
-  main { max-width:480px; margin:0 auto; padding:16px; padding-bottom:200px; }
+  main { max-width:620px; margin:0 auto; padding:16px; padding-bottom:200px; }
 
   .cal-weekdays { display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:11px; color:var(--stone-500); margin-bottom:6px; text-transform:uppercase; letter-spacing:.03em; }
   .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:18px; }
@@ -38,6 +38,7 @@
   .cal-cell-error { border-color:var(--red-600); }
   .cal-cell-selected { background:var(--teal-700); border-color:var(--teal-700); }
   .cal-cell-selected .cal-daynum { color:#fff; }
+  .cal-cell-selected .cal-value { color:#fff !important; }
   .cal-daynum { font-size:13px; font-weight:600; color:var(--stone-800); }
   .cal-value { font-size:10px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1; }
 
@@ -54,6 +55,20 @@
   .status-badge { font-size:11px; font-weight:600; padding:2px 9px; border-radius:999px; white-space:nowrap; }
   .day-error { font-size:12px; color:var(--red-600); margin-top:6px; }
   .input-error { border-color:var(--red-600) !important; }
+  .booking-list { display:flex; flex-direction:column; gap:10px; }
+  .booking { border:1px solid var(--stone-200); border-radius:12px; padding:12px; background:#fff; }
+  .booking-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
+  .booking-title { font-size:13px; font-weight:700; }
+  .booking-duration { font-size:12px; color:var(--teal-800); font-weight:600; font-variant-numeric:tabular-nums; }
+  .booking-project { margin-bottom:10px; }
+  .booking-fields { display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:8px; align-items:end; }
+  .remove-booking { border:0; background:var(--stone-100); border-radius:8px; color:var(--stone-500); height:36px; width:36px; cursor:pointer; font-size:16px; }
+  .remove-booking:hover { color:var(--red-600); background:#fee2e2; }
+  .btn-add { display:flex; justify-content:center; width:100%; padding:11px; border:1px dashed var(--teal-700); border-radius:10px; color:var(--teal-800); background:#f0fdfa; font:inherit; font-size:14px; font-weight:600; cursor:pointer; }
+  .btn-add:hover { background:var(--teal-100); }
+  .day-status { margin-top:14px; }
+  .empty-bookings { color:var(--stone-500); font-size:13px; margin:0 0 10px; }
+  @media(max-width:380px) { .booking-fields { grid-template-columns:1fr 1fr; } .booking-fields .field:nth-child(3) { grid-column:1; } .remove-booking { grid-column:2; justify-self:end; } }
 
   footer { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid var(--stone-200); box-shadow:0 -2px 10px rgba(0,0,0,.06); }
   .footer-inner { max-width:480px; margin:0 auto; padding:12px 16px 16px; }
@@ -78,6 +93,12 @@
   .btn-cancel { flex:1; padding:11px; border-radius:10px; border:1px solid var(--stone-300); background:#fff; color:var(--stone-500); font-weight:600; cursor:pointer; font-family:inherit; }
   .btn-save { flex:1; padding:11px; border-radius:10px; border:none; background:var(--teal-700); color:#fff; font-weight:600; cursor:pointer; font-family:inherit; }
   .issue-list { margin:0; padding-left:18px; font-size:13px; color:var(--red-600); display:flex; flex-direction:column; gap:4px; }
+  .time-wheel { display:grid; grid-template-columns:1fr auto 1fr; gap:10px; align-items:center; padding:12px 24px; }
+  .wheel-column { height:220px; overflow-y:auto; overscroll-behavior:contain; scroll-snap-type:y mandatory; scrollbar-width:none; padding:88px 0; position:relative; mask-image:linear-gradient(to bottom,transparent,black 28%,black 72%,transparent); -webkit-mask-image:linear-gradient(to bottom,transparent,black 28%,black 72%,transparent); }
+  .wheel-column::-webkit-scrollbar { display:none; }
+  .wheel-item { display:block; width:100%; height:44px; scroll-snap-align:center; border:0; background:transparent; color:var(--stone-400); font:500 20px 'Inter',sans-serif; cursor:pointer; }
+  .wheel-item.selected { color:var(--stone-800); font-weight:700; border-top:2px solid var(--stone-400); border-bottom:2px solid var(--stone-400); }
+  .wheel-separator { font-size:24px; color:var(--stone-500); }
 
   .menu { position:absolute; right:0; top:44px; background:#fff; border:1px solid var(--stone-200); border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,.12); overflow:hidden; display:none; z-index:25; min-width:180px; }
   .menu.open { display:block; }
@@ -120,7 +141,8 @@
       <span class="value" id="monthTotal">00:00 Std.</span>
     </div>
     <div class="error" id="sendError"></div>
-    <a href="#" class="btn-primary" id="sendMailBtn">✉️ Per E-Mail senden</a>
+    <div class="note" id="sendNote"></div>
+    <a href="#" class="btn-primary" id="sendMailBtn">📎 Per E-Mail senden (mit Excel)</a>
     <button class="btn-ghost" id="copyBtn">⧉ E-Mail-Text kopieren (falls sich keine Mail-App öffnet)</button>
     <div class="note" id="copyNote"></div>
     <button class="btn-ghost" id="shareExcelBtn">📎 Excel-Datei herunterladen</button>
@@ -139,6 +161,7 @@
       <div><label>Name</label><input id="fNachname" type="text"></div>
       <div><label>Personalnummer</label><input id="fPersonalnummer" type="text"></div>
       <div><label>E-Mail Empfänger (Arbeitgeber)</label><input id="fEmpfaenger" type="email"></div>
+      <div><label for="fTimePicker">Zeiteingabe</label><select id="fTimePicker"><option value="clock">Ziffernblatt (bisher)</option><option value="wheel">24‑Stunden-Rad (Stunden und Minuten)</option></select></div>
     </div>
     <div class="sheet-foot">
       <button class="btn-cancel" id="cancelAdmin">Abbrechen</button>
@@ -162,6 +185,18 @@
       <button class="btn-cancel" id="confirmCancel">Abbrechen</button>
       <button class="btn-save" id="confirmProceed">Trotzdem fortfahren</button>
     </div>
+  </div>
+</div>
+
+<div class="overlay" id="timePickerOverlay">
+  <div class="sheet" id="timePickerSheet">
+    <div class="sheet-head"><h2 id="timePickerTitle" style="font-size:16px;">Zeit wählen</h2><button class="iconbtn" style="color:#292524;" id="closeTimePicker" aria-label="Schließen">✕</button></div>
+    <div class="time-wheel">
+      <div><div class="field"><label>Stunde</label></div><div class="wheel-column" id="hourWheel" aria-label="Stunde"></div></div>
+      <div class="wheel-separator">:</div>
+      <div><div class="field"><label>Minute</label></div><div class="wheel-column" id="minuteWheel" aria-label="Minute"></div></div>
+    </div>
+    <div class="sheet-foot"><button class="btn-cancel" id="cancelTimePicker">Abbrechen</button><button class="btn-save" id="saveTimePicker">Übernehmen</button></div>
   </div>
 </div>
 
@@ -190,16 +225,23 @@ function timeToMinutes(t){
   if(Number.isNaN(h)||Number.isNaN(m)) return null;
   return h*60+m;
 }
+function computeBookingResult(booking){
+  const start = timeToMinutes(booking.beginn), end = timeToMinutes(booking.ende), pause = Number(booking.pause)||0;
+  if(start === null || end === null) return {minutes:0,error:null};
+  const diff = end-start;
+  if(diff < 0) return {minutes:0,error:"Endzeit darf nicht vor der Beginnzeit liegen."};
+  if(pause > diff) return {minutes:0,error:"Die Pause darf nicht länger als die Buchungszeit sein."};
+  return {minutes:Math.max(0,diff-pause),error:null};
+}
 function computeDailyResult(entry){
-  if (entry.status) return { minutes: 0, error: null };
-  const start = timeToMinutes(entry.beginn);
-  const end = timeToMinutes(entry.ende);
-  const pause = Number(entry.pause) || 0;
-  if (start === null || end === null) return { minutes: 0, error: null };
-  const diff = end - start;
-  if (diff < 0) return { minutes: 0, error: "Endzeit darf nicht vor der Beginnzeit liegen." };
-  const total = diff - pause;
-  return { minutes: total > 0 ? total : 0, error: null };
+  if(entry.status) return {minutes:0,error:null};
+  let minutes=0;
+  for(const booking of (entry.buchungen||[])){
+    const result=computeBookingResult(booking);
+    if(result.error) return {minutes,error:result.error};
+    minutes+=result.minutes;
+  }
+  return {minutes,error:null};
 }
 function computeDailyMinutes(entry){ return computeDailyResult(entry).minutes; }
 function formatMinutes(min){
@@ -210,13 +252,24 @@ function formatMinutesCompact(min){
   const h = Math.floor(min/60), m = min%60;
   return `${h}:${pad(m)}`;
 }
-function emptyEntry(){ return { beginn:"", ende:"", pause:"", projekt:"", status:"" }; }
+function emptyBooking(){ return { beginn:"", ende:"", pause:"", projekt:"" }; }
+function emptyEntry(){ return { buchungen:[], status:"" }; }
+function normalizeEntry(raw){
+  if(!raw || typeof raw !== "object") return emptyEntry();
+  if(Array.isArray(raw.buchungen)) return {buchungen:raw.buchungen.map(b=>{b=b||{};return {beginn:b.beginn||"",ende:b.ende||"",pause:b.pause||"",projekt:b.projekt||""};}),status:raw.status||""};
+  const booking={beginn:raw.beginn||"",ende:raw.ende||"",pause:raw.pause||"",projekt:raw.projekt||""};
+  return {buchungen:(booking.beginn||booking.ende||booking.pause||booking.projekt)?[booking]:[],status:raw.status||""};
+}
+function escapeHTML(value){ return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
 function dayKey(ds){ return STORAGE_PREFIX+"tag_"+ds; }
 function loadDayEntry(ds){
   try {
     const raw = localStorage.getItem(dayKey(ds));
-    return raw ? JSON.parse(raw) : emptyEntry();
+    if(!raw) return emptyEntry();
+    const parsed=JSON.parse(raw), normalized=normalizeEntry(parsed);
+    if(!Array.isArray(parsed.buchungen)) saveDayEntry(ds,normalized);
+    return normalized;
   } catch(e){ return emptyEntry(); }
 }
 function saveDayEntry(ds, entry){
@@ -245,8 +298,8 @@ function migrateOldWeekData(){
         d.setDate(monday.getDate()+i);
         const ds = toISODate(d);
         if (!localStorage.getItem(dayKey(ds))){
-          const normalized = { beginn:entry.beginn||"", ende:entry.ende||"", pause:entry.pause||"", projekt:entry.projekt||"", status:entry.status||"" };
-          const hasData = normalized.beginn || normalized.ende || normalized.pause || normalized.projekt || normalized.status;
+          const normalized = normalizeEntry(entry);
+          const hasData = normalized.buchungen.length || normalized.status;
           if (hasData) saveDayEntry(ds, normalized);
         }
       });
@@ -257,7 +310,7 @@ function migrateOldWeekData(){
 function loadAdmin(){
   try {
     const raw = localStorage.getItem(STORAGE_PREFIX+"admin");
-    if(raw) state.admin = JSON.parse(raw);
+    if(raw) state.admin = {...state.admin,...JSON.parse(raw)};
   } catch(e){ console.error("Adminbereich konnte nicht geladen werden", e); }
 }
 
@@ -293,6 +346,12 @@ function renderMonthHeader(){
   document.getElementById("monthLabel").textContent = `${MONTH_NAMES[viewMonth.getMonth()]} ${viewMonth.getFullYear()}`;
 }
 
+function timeInputMarkup(booking,index,field,disabled,error){
+  const id=`f${field[0].toUpperCase()}${field.slice(1)}${index}`;
+  if((state.admin.timePicker||"clock")==="wheel") return `<input type="text" id="${id}" data-field="${field}" data-time-wheel readonly inputmode="none" value="${escapeHTML(booking[field])}" placeholder="--:--" ${disabled} class="${error?"input-error":""}" aria-label="${field==="beginn"?"Beginn":"Ende"} (24-Stunden-Rad)">`;
+  return `<input type="time" id="${id}" data-field="${field}" value="${escapeHTML(booking[field])}" ${disabled} class="${error?"input-error":""}">`;
+}
+
 function renderCalendar(){
   const cells = getCalendarCells(viewMonth);
   const todayStr = toISODate(new Date());
@@ -308,16 +367,16 @@ function renderCalendar(){
     if(result.error) classes.push("cal-cell-error");
     let indicator = "";
     let cellStyle = "";
-    if(ds !== selectedDate){
-      if(entry.status){
+    if(entry.status){
         cellStyle = `background:${meta.bg};`;
         indicator = `<span class="cal-value" style="color:${meta.fg}">${STATUS_ABBR[entry.status]||""}</span>`;
-      } else if(result.minutes > 0){
+    } else if(result.minutes > 0){
         cellStyle = `background:${WORK_META.bg};`;
-        indicator = `<span class="cal-value" style="color:${WORK_META.fg}">${formatMinutesCompact(result.minutes)}</span>`;
-      }
+        const projectCount=new Set(entry.buchungen.map(b=>b.projekt.trim()).filter(Boolean)).size;
+        indicator = `<span class="cal-value" style="color:${WORK_META.fg}">${formatMinutesCompact(result.minutes)}${projectCount>1?` · ${projectCount}P`:""}</span>`;
     }
-    return `<button type="button" class="${classes.join(" ")}" data-date="${ds}" style="${cellStyle}">
+    const ariaDetails=entry.status?STATUS_META[entry.status]?.label||"":`${formatMinutes(result.minutes)} Stunden${(()=>{const n=new Set(entry.buchungen.map(b=>b.projekt.trim()).filter(Boolean)).size;return n>1?`, ${n} Projekte`:"";})()}`;
+    return `<button type="button" class="${classes.join(" ")}" data-date="${ds}" style="${cellStyle}" aria-label="${c.date.getDate()}. ${MONTH_NAMES[c.date.getMonth()]} ${c.date.getFullYear()}, ${ariaDetails}">
       <span class="cal-daynum">${c.date.getDate()}</span>
       ${indicator}
     </button>`;
@@ -332,6 +391,22 @@ function renderDayEditor(){
   const result = computeDailyResult(e);
   const disabled = e.status ? "disabled" : "";
   const meta = e.status ? STATUS_META[e.status] : null;
+  const bookingsHTML = e.buchungen.map((b,i)=>{
+    const bookingResult=computeBookingResult(b);
+    return `<div class="booking" data-booking="${i}">
+      <div class="booking-head"><span class="booking-title">Buchung ${i+1}</span><span class="booking-duration">${formatMinutes(bookingResult.minutes)} Std.</span></div>
+      <div class="field booking-project"><label for="fProjekt${i}">Projekt</label><input type="text" id="fProjekt${i}" data-field="projekt" value="${escapeHTML(b.projekt)}" placeholder="z. B. Musterstraße 12" ${disabled}></div>
+      <div class="booking-fields">
+        <div class="field"><label for="fBeginn${i}">Beginn</label>${timeInputMarkup(b,i,"beginn",disabled,false)}</div>
+        <div class="field"><label for="fEnde${i}">Ende</label>${timeInputMarkup(b,i,"ende",disabled,!!bookingResult.error)}</div>
+        <div class="field"><label for="fPause${i}">Pause (Min)</label><input type="number" min="0" step="5" placeholder="0" id="fPause${i}" data-field="pause" value="${escapeHTML(b.pause)}" ${disabled}></div>
+        <button type="button" class="remove-booking" data-remove="${i}" aria-label="Buchung ${i+1} entfernen" ${disabled}>✕</button>
+      </div>
+      ${bookingResult.error?`<div class="day-error">${bookingResult.error}</div>`:""}
+    </div>`;
+  }).join("");
+  const overlap = findBookingOverlap(e.buchungen);
+  const dayError = result.error || (overlap!==null ? `Buchung ${overlap+1} überschneidet sich zeitlich mit einer anderen Buchung.` : "");
   document.getElementById("dayEditor").innerHTML = `
     <div class="card">
       <div class="card-head">
@@ -344,14 +419,10 @@ function renderDayEditor(){
           <span class="status-badge" id="dayEditorBadge" style="display:${meta?"inline-block":"none"};background:${meta?meta.bg:""};color:${meta?meta.fg:""};">${meta?meta.label:""}</span>
         </div>
       </div>
-      <div class="fields">
-        <div class="field"><label>Beginn</label><input type="time" id="fBeginn" value="${e.beginn||""}" ${disabled}></div>
-        <div class="field"><label>Ende</label><input type="time" id="fEnde" value="${e.ende||""}" ${disabled} class="${result.error?"input-error":""}"></div>
-        <div class="field"><label>Pause (Min)</label><input type="number" min="0" step="5" placeholder="0" id="fPause" value="${e.pause||""}" ${disabled}></div>
-      </div>
-      <div class="day-error" id="dayEditorError" style="display:${result.error?"block":"none"};">${result.error||""}</div>
-      <div class="field" style="margin-top:8px;"><label>Projekt</label><input type="text" id="fProjekt" value="${e.projekt||""}" placeholder="z. B. Musterstraße 12"></div>
-      <div class="field" style="margin-top:8px;">
+      ${e.buchungen.length?`<div class="booking-list">${bookingsHTML}</div>`:`<p class="empty-bookings">Für diesen Tag gibt es noch keine Buchung.</p>`}
+      <div class="day-error" id="dayEditorError" style="display:${dayError?"block":"none"};">${dayError}</div>
+      <button type="button" class="btn-add" id="addBookingBtn" ${disabled}>＋ Buchung hinzufügen</button>
+      <div class="field day-status">
         <label>Status</label>
         <select id="fStatus">
           <option value="" ${!e.status?"selected":""}>Arbeitstag</option>
@@ -363,34 +434,101 @@ function renderDayEditor(){
       </div>
       <div class="note" id="dayEditorNote">Gespeichert ✓</div>
     </div>`;
-  ["fBeginn","fEnde","fPause","fProjekt"].forEach((id)=>{
-    document.getElementById(id).addEventListener("input", onDayFieldChange);
-  });
+  document.getElementById("dayEditor").querySelectorAll("[data-field]").forEach(input=>input.addEventListener("input", onDayFieldChange));
+  document.getElementById("dayEditor").querySelectorAll("[data-time-wheel]").forEach(input=>input.addEventListener("click",()=>openTimePicker(input)));
+  document.getElementById("dayEditor").querySelectorAll("[data-remove]").forEach(button=>button.addEventListener("click",()=>removeBooking(Number(button.dataset.remove))));
+  document.getElementById("addBookingBtn").addEventListener("click", addBooking);
   document.getElementById("fStatus").addEventListener("change", onDayFieldChange);
 }
 
-let savedNoteTimer = null;
-function onDayFieldChange(){
-  const entry = {
-    beginn: document.getElementById("fBeginn").value,
-    ende: document.getElementById("fEnde").value,
-    pause: document.getElementById("fPause").value,
-    projekt: document.getElementById("fProjekt").value,
-    status: document.getElementById("fStatus").value,
+function findBookingOverlap(bookings){
+  const timed=bookings.map((b,i)=>({i,start:timeToMinutes(b.beginn),end:timeToMinutes(b.ende)})).filter(b=>b.start!==null&&b.end!==null&&b.end>b.start).sort((a,b)=>a.start-b.start);
+  for(let i=1;i<timed.length;i++) if(timed[i].start<timed[i-1].end) return Math.max(timed[i].i,timed[i-1].i);
+  return null;
+}
+let activeTimeInput=null, wheelParts={hour:0,minute:0}, wheelScrollTimer=null;
+function renderWheelColumn(elementId,count,selected){
+  const column=document.getElementById(elementId);
+  column.innerHTML=Array.from({length:count},(_,i)=>`<button type="button" class="wheel-item${i===selected?" selected":""}" data-value="${i}" aria-pressed="${i===selected}">${pad(i)}</button>`).join("");
+  column.scrollTop=selected*44;
+  column.onscroll=()=>{
+    const index=Math.max(0,Math.min(count-1,Math.round(column.scrollTop/44)));
+    wheelParts[elementId==="hourWheel"?"hour":"minute"]=index;
+    updateWheelSelection(column,index);
+    clearTimeout(wheelScrollTimer);
+    wheelScrollTimer=setTimeout(()=>{ column.scrollTo({top:index*44,behavior:"smooth"}); },90);
   };
+  column.onclick=(ev)=>{
+    const item=ev.target.closest(".wheel-item"); if(!item) return;
+    const index=Number(item.dataset.value);
+    wheelParts[elementId==="hourWheel"?"hour":"minute"]=index;
+    updateWheelSelection(column,index);
+    column.scrollTo({top:index*44,behavior:"smooth"});
+  };
+}
+function updateWheelSelection(column,index){
+  column.querySelectorAll(".wheel-item").forEach((item,i)=>{const selected=i===index;item.classList.toggle("selected",selected);item.setAttribute("aria-pressed",String(selected));});
+}
+function openTimePicker(input){
+  if(input.disabled) return;
+  activeTimeInput=input;
+  const current=input.value||"00:00", parts=current.split(":");
+  wheelParts={hour:Number(parts[0])||0,minute:Number(parts[1])||0};
+  const label=document.querySelector(`label[for="${input.id}"]`);
+  document.getElementById("timePickerTitle").textContent=`${label?.textContent||"Zeit"} wählen`;
+  renderWheelColumn("hourWheel",24,wheelParts.hour);
+  renderWheelColumn("minuteWheel",60,wheelParts.minute);
+  document.getElementById("timePickerOverlay").classList.add("open");
+}
+function closeTimePicker(){
+  document.getElementById("timePickerOverlay").classList.remove("open");
+  activeTimeInput=null;
+}
+document.getElementById("closeTimePicker").addEventListener("click",closeTimePicker);
+document.getElementById("cancelTimePicker").addEventListener("click",closeTimePicker);
+document.getElementById("timePickerOverlay").addEventListener("click",closeTimePicker);
+document.getElementById("timePickerSheet").addEventListener("click",ev=>ev.stopPropagation());
+document.getElementById("saveTimePicker").addEventListener("click",()=>{
+  if(activeTimeInput){ activeTimeInput.value=`${pad(wheelParts.hour)}:${pad(wheelParts.minute)}`; activeTimeInput.dispatchEvent(new Event("input",{bubbles:true})); }
+  closeTimePicker();
+});
+function addBooking(){
+  const entry=loadDayEntry(selectedDate);
+  const last=entry.buchungen[entry.buchungen.length-1];
+  const next=emptyBooking();
+  if(last && last.ende){ next.beginn=last.ende; next.projekt=last.projekt||""; }
+  entry.buchungen.push(next);
+  saveDayEntry(selectedDate,entry); renderDayEditor(); updateMonthTotal(); updateSendLink();
+  const input=document.querySelector(`#fProjekt${entry.buchungen.length-1}`); if(input) input.focus();
+}
+function removeBooking(index){
+  const entry=loadDayEntry(selectedDate);
+  entry.buchungen.splice(index,1); saveDayEntry(selectedDate,entry);
+  renderCalendar(); renderDayEditor(); updateMonthTotal(); updateSendLink();
+}
+
+let savedNoteTimer = null;
+function onDayFieldChange(ev){
+  const entry=loadDayEntry(selectedDate);
+  const input=ev.target.closest("[data-field]");
+  if(input){ const booking=input.closest("[data-booking]"); entry.buchungen[Number(booking.dataset.booking)][input.dataset.field]=input.value; }
+  const statusInput=document.getElementById("fStatus");
+  if(ev.target===statusInput) entry.status=statusInput.value;
   saveDayEntry(selectedDate, entry);
 
   const result = computeDailyResult(entry);
   document.getElementById("dayEditorTotal").textContent = formatMinutes(result.minutes)+" Std.";
   const errBox = document.getElementById("dayEditorError");
-  const endeInput = document.getElementById("fEnde");
-  if(result.error){ errBox.textContent=result.error; errBox.style.display="block"; endeInput.classList.add("input-error"); }
-  else { errBox.style.display="none"; endeInput.classList.remove("input-error"); }
+  const overlap=findBookingOverlap(entry.buchungen);
+  const error=result.error || (overlap!==null ? `Buchung ${overlap+1} überschneidet sich zeitlich mit einer anderen Buchung.` : "");
+  errBox.textContent=error; errBox.style.display=error?"block":"none";
+  entry.buchungen.forEach((b,i)=>{
+    const bookingResult=computeBookingResult(b), card=document.querySelector(`[data-booking="${i}"]`);
+    if(card){ card.querySelector(".booking-duration").textContent=formatMinutes(bookingResult.minutes)+" Std."; const end=card.querySelector('[data-field="ende"]'); if(end) end.classList.toggle("input-error",!!bookingResult.error); }
+  });
 
   const disable = !!entry.status;
-  document.getElementById("fBeginn").disabled = disable;
-  document.getElementById("fEnde").disabled = disable;
-  document.getElementById("fPause").disabled = disable;
+  document.querySelectorAll("#dayEditor [data-field], .remove-booking, #addBookingBtn").forEach(el=>el.disabled=disable);
 
   const badge = document.getElementById("dayEditorBadge");
   const meta = STATUS_META[entry.status];
@@ -451,6 +589,7 @@ function openAdmin(){
   document.getElementById("fNachname").value = state.admin.nachname||"";
   document.getElementById("fPersonalnummer").value = state.admin.personalnummer||"";
   document.getElementById("fEmpfaenger").value = state.admin.empfaengerEmail||"";
+  document.getElementById("fTimePicker").value = state.admin.timePicker||"clock";
   document.getElementById("adminNote").style.display="none";
   adminOverlay.classList.add("open");
 }
@@ -466,11 +605,13 @@ document.getElementById("saveAdmin").addEventListener("click", ()=>{
     nachname: document.getElementById("fNachname").value.trim(),
     personalnummer: document.getElementById("fPersonalnummer").value.trim(),
     empfaengerEmail: document.getElementById("fEmpfaenger").value.trim(),
+    timePicker: document.getElementById("fTimePicker").value==="wheel"?"wheel":"clock",
   };
   const note = document.getElementById("adminNote");
   try {
     localStorage.setItem(STORAGE_PREFIX+"admin", JSON.stringify(draft));
     state.admin = draft;
+    renderDayEditor();
     note.textContent = "Gespeichert";
     note.style.color = "var(--teal-700)";
     note.style.display = "block";
@@ -502,13 +643,14 @@ function buildBodyText(){
     if(e.status && counts.hasOwnProperty(e.status)) counts[e.status]++;
     const tag = DAY_LABELS[weekdayIndex(d)].padEnd(12," ");
     const datum = `${pad(d.getDate())}.${pad(d.getMonth()+1)}.`.padEnd(7," ");
-    const beginn = (e.beginn||"--:--").padEnd(7," ");
-    const ende = (e.ende||"--:--").padEnd(6," ");
-    const pause = ((e.pause||"0")+" Min").padEnd(7," ");
-    const gesamt = formatMinutes(result.minutes).padEnd(7," ");
-    const projekt = (e.projekt||"").padEnd(16," ");
     const abwesenheit = e.status && STATUS_META[e.status] ? STATUS_META[e.status].label : "";
-    lines.push(`${tag} ${datum} ${beginn} ${ende} ${pause} ${gesamt} ${projekt} ${abwesenheit}`);
+    if(e.status){ lines.push(`${tag} ${datum} ${"--:--".padEnd(7," ")} ${"--:--".padEnd(6," ")} ${"0 Min".padEnd(7," ")} ${"00:00".padEnd(7," ")} ${"".padEnd(16," ")} ${abwesenheit}`); }
+    else if(!e.buchungen.length){ lines.push(`${tag} ${datum}`); }
+    else e.buchungen.forEach((b,i)=>{
+      const rowTag=i===0?tag:" ".repeat(12), rowDate=i===0?datum:" ".repeat(7);
+      const bookingResult=computeBookingResult(b);
+      lines.push(`${rowTag} ${rowDate} ${(b.beginn||"--:--").padEnd(7," ")} ${(b.ende||"--:--").padEnd(6," ")} ${((b.pause||"0")+" Min").padEnd(7," ")} ${formatMinutes(bookingResult.minutes).padEnd(7," ")} ${(b.projekt||"").padEnd(16," ")} ${i===0?"":""}`);
+    });
   });
   lines.push("");
   lines.push(`Monatssumme Arbeitsstunden: ${formatMinutes(totalMin)} Std.`);
@@ -540,21 +682,19 @@ function validateMonthData(){
   dates.forEach((d)=>{
     const ds = toISODate(d);
     const e = loadDayEntry(ds);
-    const hasAny = e.beginn || e.ende || e.pause || e.projekt || e.status;
+    const hasAny = e.buchungen.some(b=>b.beginn||b.ende||b.pause||b.projekt) || e.status;
     if(hasAny) hasAnyData = true;
     const label = `${DAY_LABELS[weekdayIndex(d)]}, ${pad(d.getDate())}.${pad(d.getMonth()+1)}.`;
-    const result = computeDailyResult(e);
-    if(result.error){
-      issues.push(`${label}: ${result.error}`);
-      return;
-    }
     if(!e.status){
-      if((e.beginn && !e.ende) || (!e.beginn && e.ende)){
-        issues.push(`${label}: Beginn oder Ende fehlt noch.`);
-      } else if(e.beginn && e.ende){
-        const start = timeToMinutes(e.beginn), end = timeToMinutes(e.ende), pause = Number(e.pause)||0;
-        if(end - start - pause < 0) issues.push(`${label}: Pause ist länger als die Arbeitszeit.`);
-      }
+      e.buchungen.forEach((b,i)=>{
+        const any=b.beginn||b.ende||b.pause||b.projekt;
+        if(!any) return;
+        const result=computeBookingResult(b);
+        if(result.error) issues.push(`${label}, Buchung ${i+1}: ${result.error}`);
+        if(any&&(!b.beginn||!b.ende)) issues.push(`${label}, Buchung ${i+1}: Beginn oder Ende fehlt noch.`);
+        if(b.beginn&&b.ende&&!b.projekt.trim()) issues.push(`${label}, Buchung ${i+1}: Projekt fehlt noch.`);
+      });
+      if(findBookingOverlap(e.buchungen)!==null) issues.push(`${label}: Buchungen überschneiden sich zeitlich.`);
     }
   });
   return { issues, hasAnyData };
@@ -601,6 +741,7 @@ function runWithValidation(actionFn){
 document.getElementById("sendMailBtn").addEventListener("click",(e)=>{
   e.preventDefault();
   const errBox = document.getElementById("sendError");
+  document.getElementById("sendNote").style.display="none";
   if(!state.admin.empfaengerEmail){
     errBox.textContent = "Bitte zuerst die Empfänger-E-Mail im Adminbereich eintragen.";
     errBox.style.display="block";
@@ -610,8 +751,35 @@ document.getElementById("sendMailBtn").addEventListener("click",(e)=>{
   errBox.style.display="none";
   runWithValidation(proceedWithMailSend);
 });
-function proceedWithMailSend(){
-  window.location.href = document.getElementById("sendMailBtn").href;
+async function proceedWithMailSend(){
+  const errBox=document.getElementById("sendError");
+  const {blob,filename}=buildWorkbookBlob();
+  if(!blob){
+    errBox.textContent="Excel-Datei konnte nicht erstellt werden. Bitte Internetverbindung prüfen und erneut versuchen.";
+    errBox.style.display="block";
+    return;
+  }
+  const file=new File([blob],filename,{type:blob.type});
+  const subject=`Stundenuebersicht ${MONTH_NAMES[viewMonth.getMonth()]} ${viewMonth.getFullYear()} - ${state.admin.vorname} ${state.admin.nachname}`;
+  const recipient=state.admin.empfaengerEmail;
+  const body=buildBodyText();
+  if(navigator.share && navigator.canShare){
+    try{
+      if(navigator.canShare({files:[file]})){
+        await navigator.share({files:[file],title:subject,text:`An: ${recipient}\n\n${body}`});
+        return;
+      }
+    }catch(e){
+      if(e && e.name==="AbortError") return;
+    }
+  }
+  // mailto links cannot attach files; download the workbook and open a prepared draft as a fallback.
+  downloadBlob(blob,filename);
+  const note=document.getElementById("sendNote");
+  note.textContent="Dein Browser kann Dateien nicht direkt an die E-Mail übergeben. Die Excel-Datei wurde heruntergeladen; füge sie im E-Mail-Entwurf als Anhang hinzu.";
+  note.style.display="block";
+  document.getElementById("sendMailBtn").href=`mailto:${encodeURIComponent(recipient)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  window.location.href=document.getElementById("sendMailBtn").href;
 }
 
 document.getElementById("copyBtn").addEventListener("click", async ()=>{
@@ -659,7 +827,12 @@ function buildWorkbookBlob(){
     totalMin += result.minutes;
     if(e.status && counts.hasOwnProperty(e.status)) counts[e.status]++;
     const abwesenheit = e.status && STATUS_META[e.status] ? STATUS_META[e.status].label : "";
-    rows.push([DAY_LABELS[weekdayIndex(d)], ds, e.beginn||"", e.ende||"", e.pause||"0", formatMinutes(result.minutes), e.projekt||"", abwesenheit]);
+    if(e.status) rows.push([DAY_LABELS[weekdayIndex(d)], ds, "", "", "0", "00:00", "", abwesenheit]);
+    else if(!e.buchungen.length) rows.push([DAY_LABELS[weekdayIndex(d)],ds,"","","","00:00","",""]);
+    else e.buchungen.forEach((b,i)=>{
+      const bookingResult=computeBookingResult(b);
+      rows.push([i===0?DAY_LABELS[weekdayIndex(d)]:"",i===0?ds:"",b.beginn||"",b.ende||"",b.pause||"0",formatMinutes(bookingResult.minutes),b.projekt||"",""]);
+    });
   });
   rows.push([]);
   rows.push(["Monatssumme Arbeitsstunden","","","","",formatMinutes(totalMin),"",""]);
