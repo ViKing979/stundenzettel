@@ -127,6 +127,173 @@ let state = { admin: normalizeAdmin() };
 let viewMonth = new Date(); viewMonth.setDate(1); viewMonth.setHours(0,0,0,0);
 let selectedDate = toISODate(new Date());
 
+// Texte der Spracheingabe: Reihenfolge je Zeile entspricht den Schlüsseln in VOICE_TEXT_KEYS.
+const VOICE_TEXT_KEYS = ["button","title","instructions","privacy","start","stop","unsupported","listening","ready","parse","transcript","placeholder","preview","project","startTime","endTime","break","noText","noRanges","missingProject","invalidTime","overlap","existingStatus","apply","applied","noRecognition"];
+const VOICE_TEXT = {
+  de:["🎙️ Mit Sprache erfassen","Spracheingabe für Buchungen","Sprich jede Buchung mit Beginn, Ende und Projekt. Beispiel: „Von 08:00 bis 11:30 Projekt Büro Nord, 15 Minuten Pause.“","Je nach Browser kann die Spracherkennung über einen Online-Dienst laufen. Prüfe die erkannten Angaben vor dem Speichern.","🎙️ Aufnahme starten","Aufnahme stoppen","Dein Browser bietet keine integrierte Spracherkennung. Du kannst den Text unten eingeben oder die Diktierfunktion deiner Tastatur verwenden.","Ich höre zu … Sprich jetzt.","Du kannst den erkannten Text prüfen und bearbeiten.","Buchungen erkennen","Erkannter Text","Zum Beispiel: Von 08:00 bis 11:30 Projekt Büro Nord","Erkannte Buchungen – bitte prüfen","Projekt","Beginn","Ende","Pause in Minuten","Bitte gib zuerst Text ein oder starte die Aufnahme.","Ich konnte keine Zeitspanne erkennen. Verwende zum Beispiel „08:00 bis 11:30“.","Projekt fehlt – ergänze es bitte.","Prüfe Beginn, Ende und Pause.","Die Zeiträume überschneiden sich. Bitte korrigiere die Uhrzeiten.","Für diesen Tag ist ein Abwesenheitsstatus eingetragen. Ändere zuerst den Status auf Arbeitstag.","Buchungen übernehmen","Buchungen wurden zum ausgewählten Tag hinzugefügt.","Spracherkennung ist in diesem Browser nicht verfügbar. Du kannst die Diktierfunktion der Bildschirmtastatur nutzen."],
+  ru:["🎙️ Ввести голосом","Голосовой ввод записей","Назовите начало, конец и проект для каждой записи. Пример: «С 08:00 до 11:30 проект Büro Nord, перерыв 15 минут».","В зависимости от браузера распознавание речи может выполняться через интернет-сервис. Проверьте данные перед сохранением.","🎙️ Начать запись","Остановить запись","В браузере нет встроенного распознавания речи. Введите текст ниже или используйте диктовку клавиатуры.","Слушаю… Говорите.","Проверьте и при необходимости исправьте распознанный текст.","Распознать записи","Распознанный текст","Например: С 08:00 до 11:30 проект Büro Nord","Распознанные записи — проверьте их","Проект","Начало","Конец","Перерыв, минут","Сначала введите текст или начните запись.","Не удалось распознать период. Например: «08:00 до 11:30».","Не указан проект — добавьте его.","Проверьте время начала, окончания и перерыв.","Периоды пересекаются. Исправьте время.","На этот день указано отсутствие. Сначала измените статус на рабочий день.","Добавить записи","Записи добавлены к выбранному дню.","Распознавание речи недоступно. Можно использовать диктовку экранной клавиатуры."],
+  uk:["🎙️ Ввести голосом","Голосове введення записів","Назвіть початок, кінець і проєкт для кожного запису. Приклад: «З 08:00 до 11:30 проєкт Büro Nord, перерва 15 хвилин».","Залежно від браузера розпізнавання мовлення може виконуватися через онлайн-сервіс. Перевірте дані перед збереженням.","🎙️ Почати запис","Зупинити запис","У браузері немає вбудованого розпізнавання мовлення. Введіть текст нижче або скористайтеся диктуванням клавіатури.","Слухаю… Говоріть.","Перевірте та за потреби виправте розпізнаний текст.","Розпізнати записи","Розпізнаний текст","Наприклад: З 08:00 до 11:30 проєкт Büro Nord","Розпізнані записи — перевірте їх","Проєкт","Початок","Кінець","Перерва, хвилин","Спочатку введіть текст або почніть запис.","Не вдалося розпізнати проміжок. Наприклад: «08:00 до 11:30».","Не вказано проєкт — додайте його.","Перевірте початок, кінець і перерву.","Проміжки перетинаються. Виправте час.","На цей день вказано відсутність. Спочатку змініть статус на робочий день.","Додати записи","Записи додано до вибраного дня.","Розпізнавання мовлення недоступне. Можна скористатися диктуванням клавіатури."],
+  tr:["🎙️ Sesle giriş","Sesli kayıt girişi","Her kayıt için başlangıç, bitiş ve proje adını söyleyin. Örnek: “08:00 ile 11:30 arası Büro Nord projesi, 15 dakika mola.”","Tarayıcıya bağlı olarak konuşma tanıma çevrimiçi bir hizmet kullanabilir. Kaydetmeden önce bilgileri kontrol edin.","🎙️ Kaydı başlat","Kaydı durdur","Tarayıcınızda yerleşik konuşma tanıma yok. Metni aşağıya yazabilir veya klavye diktesini kullanabilirsiniz.","Dinliyorum… Konuşabilirsiniz.","Tanınan metni kontrol edip düzenleyebilirsiniz.","Kayıtları tanı","Tanınan metin","Örnek: 08:00 ile 11:30 arası Büro Nord projesi","Tanınan kayıtlar — lütfen kontrol edin","Proje","Başlangıç","Bitiş","Mola, dakika","Önce metin girin veya kaydı başlatın.","Bir zaman aralığı tanınamadı. Örnek: “08:00 ile 11:30”.","Proje eksik — lütfen ekleyin.","Başlangıç, bitiş ve mola sürelerini kontrol edin.","Zaman aralıkları çakışıyor. Saatleri düzeltin.","Bu gün için devamsızlık durumu var. Önce çalışma günü olarak değiştirin.","Kayıtları ekle","Kayıtlar seçilen güne eklendi.","Konuşma tanıma bu tarayıcıda kullanılamıyor. Ekran klavyesi diktesini deneyebilirsiniz."],
+  pl:["🎙️ Wprowadź głosem","Głosowe wprowadzanie wpisów","Podaj początek, koniec i projekt dla każdego wpisu. Przykład: „Od 08:00 do 11:30 projekt Büro Nord, 15 minut przerwy”.","W zależności od przeglądarki rozpoznawanie mowy może korzystać z usługi online. Sprawdź dane przed zapisaniem.","🎙️ Rozpocznij nagrywanie","Zatrzymaj nagrywanie","Przeglądarka nie ma wbudowanego rozpoznawania mowy. Wpisz tekst poniżej lub użyj dyktowania z klawiatury.","Słucham… Mów teraz.","Sprawdź i popraw rozpoznany tekst.","Rozpoznaj wpisy","Rozpoznany tekst","Na przykład: Od 08:00 do 11:30 projekt Büro Nord","Rozpoznane wpisy — sprawdź je","Projekt","Początek","Koniec","Przerwa w minutach","Najpierw wpisz tekst lub rozpocznij nagrywanie.","Nie rozpoznano przedziału czasu. Przykład: „08:00 do 11:30”.","Brakuje projektu — uzupełnij go.","Sprawdź początek, koniec i przerwę.","Przedziały nakładają się. Popraw godziny.","Dla tego dnia ustawiono nieobecność. Najpierw zmień status na dzień pracy.","Dodaj wpisy","Wpisy dodano do wybranego dnia.","Rozpoznawanie mowy jest niedostępne. Możesz użyć dyktowania z klawiatury ekranowej."],
+  ro:["🎙️ Introducere vocală","Introducere vocală a pontajelor","Spuneți începutul, sfârșitul și proiectul pentru fiecare pontaj. Exemplu: „De la 08:00 până la 11:30, proiectul Büro Nord, pauză 15 minute”.","În funcție de browser, recunoașterea vocală poate folosi un serviciu online. Verificați datele înainte de salvare.","🎙️ Pornește înregistrarea","Oprește înregistrarea","Browserul nu are recunoaștere vocală integrată. Introduceți textul mai jos sau folosiți dictarea tastaturii.","Ascult… Vorbiți acum.","Verificați și corectați textul recunoscut.","Recunoaște pontajele","Text recunoscut","De exemplu: De la 08:00 până la 11:30, proiectul Büro Nord","Pontaje recunoscute — verificați-le","Proiect","Început","Sfârșit","Pauză, minute","Introduceți mai întâi text sau porniți înregistrarea.","Nu am recunoscut un interval. Exemplu: „08:00 până la 11:30”.","Lipsește proiectul — completați-l.","Verificați începutul, sfârșitul și pauza.","Intervalele se suprapun. Corectați orele.","Pentru această zi este înregistrată o absență. Schimbați mai întâi statusul în zi lucrătoare.","Adaugă pontajele","Pontajele au fost adăugate la ziua selectată.","Recunoașterea vocală nu este disponibilă. Puteți folosi dictarea tastaturii."],
+  ar:["🎙️ إدخال صوتي","إدخال التسجيلات صوتيًا","اذكر وقت البداية والنهاية والمشروع لكل تسجيل. مثال: «من 08:00 إلى 11:30 مشروع Büro Nord، استراحة 15 دقيقة».","قد يستخدم التعرف على الكلام خدمة عبر الإنترنت حسب المتصفح. راجع البيانات قبل الحفظ.","🎙️ بدء التسجيل","إيقاف التسجيل","لا يتوفر التعرف على الكلام مدمجًا في المتصفح. يمكنك كتابة النص أدناه أو استخدام الإملاء في لوحة المفاتيح.","أستمع… تفضل بالكلام.","راجع النص الذي تم التعرف عليه وعدّله عند الحاجة.","تعرّف على التسجيلات","النص المتعرف عليه","مثال: من 08:00 إلى 11:30 مشروع Büro Nord","التسجيلات المتعرف عليها — يرجى المراجعة","المشروع","البداية","النهاية","الاستراحة بالدقائق","أدخل نصًا أو ابدأ التسجيل أولًا.","تعذر التعرف على فترة زمنية. مثال: «08:00 إلى 11:30».","المشروع غير محدد — أضفه من فضلك.","راجع وقت البداية والنهاية والاستراحة.","تتداخل الفترات الزمنية. يرجى تصحيح الوقت.","تم تسجيل غياب لهذا اليوم. غيّر الحالة إلى يوم عمل أولًا.","إضافة التسجيلات","تمت إضافة التسجيلات إلى اليوم المحدد.","التعرف على الكلام غير متاح. يمكنك استخدام الإملاء في لوحة المفاتيح."],
+  sq:["🎙️ Fut me zë","Regjistrim me zë","Thuaj fillimin, mbarimin dhe projektin për çdo regjistrim. Shembull: “Nga 08:00 deri në 11:30 projekti Büro Nord, pushim 15 minuta.”","Në varësi të shfletuesit, njohja e të folurit mund të përdorë një shërbim online. Kontrollo të dhënat para ruajtjes.","🎙️ Nis regjistrimin","Ndalo regjistrimin","Shfletuesi nuk ka njohje të integruar të të folurit. Shkruaj tekstin më poshtë ose përdor diktimin e tastierës.","Po dëgjoj… Fol tani.","Kontrollo dhe korrigjo tekstin e njohur.","Njih regjistrimet","Teksti i njohur","Për shembull: Nga 08:00 deri në 11:30 projekti Büro Nord","Regjistrimet e njohura — kontrolloji","Projekti","Fillimi","Mbarimi","Pushimi në minuta","Shkruaj tekstin ose nis regjistrimin fillimisht.","Nuk u njoh një interval kohor. Shembull: “08:00 deri në 11:30”.","Mungon projekti — shtoje.","Kontrollo fillimin, mbarimin dhe pushimin.","Intervalet mbivendosen. Korrigjo oraret.","Për këtë ditë është shënuar mungesë. Ndryshoje fillimisht statusin në ditë pune.","Shto regjistrimet","Regjistrimet u shtuan në ditën e zgjedhur.","Njohja e të folurit nuk është e disponueshme. Mund të përdorësh diktimin e tastierës."],
+  en:["🎙️ Enter by voice","Voice entry for bookings","Say the start, end and project for each booking. Example: “From 08:00 to 11:30, project Büro Nord, 15-minute break.”","Depending on your browser, speech recognition may use an online service. Check the details before saving.","🎙️ Start recording","Stop recording","Your browser does not have built-in speech recognition. Type below or use your keyboard’s dictation.","Listening… Speak now.","Check and edit the recognized text.","Recognize bookings","Recognized text","For example: From 08:00 to 11:30, project Büro Nord","Recognized bookings — please review","Project","Start","End","Break in minutes","Enter text or start recording first.","I could not find a time range. For example: “08:00 to 11:30”.","Project is missing — please add it.","Check the start, end and break.","The time ranges overlap. Please correct the times.","An absence status is set for this day. Change it to a workday first.","Add bookings","Bookings were added to the selected day.","Speech recognition is not available. You can use your keyboard’s dictation."],
+  sl:["🎙️ Glasovni vnos","Glasovni vnos evidenc","Za vsak vnos povejte začetek, konec in projekt. Primer: »Od 08:00 do 11:30 projekt Büro Nord, 15 minut odmora.«","Odvisno od brskalnika lahko prepoznavanje govora uporablja spletno storitev. Pred shranjevanjem preverite podatke.","🎙️ Začni snemanje","Ustavi snemanje","Brskalnik nima vgrajenega prepoznavanja govora. Besedilo lahko vnesete spodaj ali uporabite narekovanje na tipkovnici.","Poslušam … Govorite.","Preverite in uredite prepoznano besedilo.","Prepoznaj vnose","Prepoznano besedilo","Na primer: Od 08:00 do 11:30 projekt Büro Nord","Prepoznani vnosi — preverite jih","Projekt","Začetek","Konec","Odmor v minutah","Najprej vnesite besedilo ali začnite snemanje.","Časovnega intervala ni bilo mogoče prepoznati. Primer: »08:00 do 11:30«.","Projekt manjka — dopolnite ga.","Preverite začetek, konec in odmor.","Časovni intervali se prekrivajo. Popravite ure.","Za ta dan je nastavljen status odsotnosti. Najprej ga spremenite v delovni dan.","Dodaj vnose","Vnosi so bili dodani izbranemu dnevu.","Prepoznavanje govora ni na voljo. Uporabite lahko narekovanje na tipkovnici."]
+};
+function voiceText(key){const index=VOICE_TEXT_KEYS.indexOf(key);return index<0?key:(VOICE_TEXT[APP_LANGUAGE]||VOICE_TEXT.de)[index];}
+let speechRecognition=null, speechDrafts=[];
+function speechRecognitionConstructor(){return window.SpeechRecognition||window.webkitSpeechRecognition||null;}
+function getSpeechRangeWords(){return {de:"bis",ru:"до",uk:"до",tr:"kadar|ile",pl:"do",ro:"până\\s+la|pana\\s+la|la",ar:"إلى|الى",sq:"deri(?:\\s+në)?",en:"to|until",sl:"do"}[APP_LANGUAGE]||"bis";}
+function parseSpokenBookings(text){
+  const digits=String(text||"").replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
+  const rangeWord=getSpeechRangeWords();
+  const clock=`(?:([01]?\\d|2[0-3])\\s*[:.]\\s*([0-5]\\d)|([01]?\\d|2[0-3])\\s*(?:uhr|час(?:а|ов)?|год(?:ини)?|saat|godz(?:ina|iny)?|orë|ora|hour(?:s)?))`;
+  const re=new RegExp(`${clock}\\s*(?:${rangeWord}|[-–])\\s*${clock}`,"giu");
+  const matches=[...digits.matchAll(re)];
+  const getTime=(m,offset)=>`${pad(Number(m[offset+1]??m[offset+3]))}:${pad(Number(m[offset+2]??0))}`;
+  const projects=getProjectSuggestions().sort((a,b)=>b.length-a.length);
+  return matches.map((match,index)=>{
+    const after=match.index+match[0].length, next=index+1<matches.length?matches[index+1].index:digits.length;
+    let tail=digits.slice(after,next).replace(/^[\s,.;:،]+|[\s,.;:،]+$/g,"");
+    const breakPatterns=[/(?:pause|break|mola|przerwa|pauza|استراحة|pushim|odmor)\D{0,18}(\d{1,3})\s*(?:min(?:uten|ute|uta|ut)?|minutes?|мин(?:ут|)|хв|dk|دقيقة)?/i,/(\d{1,3})\s*(?:min(?:uten|ute|uta|ut)?|minutes?|мин(?:ут|)|хв|dk|دقيقة)\s*(?:pause|break|mola|przerwa|pauza|استراحة|pushim|odmor)/i];
+    let pause="0";
+    for(const pattern of breakPatterns){const found=tail.match(pattern);if(found){pause=String(Number(found[1]));tail=tail.replace(found[0]," ");break;}}
+    const project=projects.find(name=>tail.toLocaleLowerCase().includes(name.toLocaleLowerCase()));
+    if(project){const projectStart=tail.toLocaleLowerCase().indexOf(project.toLocaleLowerCase());tail=tail.slice(0,projectStart)+" "+tail.slice(projectStart+project.length);}
+    tail=tail.replace(/\b(?:projekt|project|progetto|про[еє]кт|проєкт|proje|projektu|proiectul|proiect|المشروع|projekti)\b/gi," ").replace(/\b(?:und|dann|danach|and|then|y|i|a|și|si|ve|sonra|потім|затем)\b/gi," ").replace(/^[\s,.;:،-]+|[\s,.;:،-]+$/g," ").trim();
+    const likelyProject=project||tail;
+    return {beginn:getTime(match,0),ende:getTime(match,3),pause,projekt:likelyProject};
+  });
+}
+
+function setSpeechStatus(message,isError=false){
+  const status=document.getElementById("speechStatus");
+  status.textContent=message;
+  status.classList.toggle("speech-error",isError);
+}
+function openSpeechEntry(){
+  speechDrafts=[];
+  document.getElementById("speechTranscript").value="";
+  document.getElementById("speechPreview").innerHTML="";
+  document.getElementById("speechApply").disabled=true;
+  document.getElementById("speechTitle").textContent=voiceText("title");
+  document.getElementById("speechInstructions").textContent=voiceText("instructions");
+  document.getElementById("speechDate").textContent=new Date(selectedDate+"T00:00:00").toLocaleDateString(APP_LOCALE,{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
+  document.getElementById("speechPrivacy").textContent=voiceText("privacy");
+  document.getElementById("speechStart").textContent=voiceText("start");
+  document.getElementById("speechStop").textContent=voiceText("stop");
+  document.getElementById("speechParse").textContent=voiceText("parse");
+  document.getElementById("speechTranscriptLabel").textContent=voiceText("transcript");
+  document.getElementById("speechTranscript").placeholder=voiceText("placeholder");
+  document.getElementById("speechApply").textContent=voiceText("apply");
+  document.getElementById("speechOverlay").classList.add("open");
+  setSpeechStatus(speechRecognitionConstructor()?voiceText("ready"):voiceText("unsupported"),!speechRecognitionConstructor());
+}
+function stopSpeechRecognition(){
+  if(speechRecognition){try{speechRecognition.stop();}catch(e){}}
+  document.getElementById("speechStart").disabled=false;
+  document.getElementById("speechStop").disabled=true;
+}
+function closeSpeechEntry(){
+  stopSpeechRecognition();
+  document.getElementById("speechOverlay").classList.remove("open");
+  speechRecognition=null;
+  speechDrafts=[];
+}
+function startSpeechRecognition(){
+  const Recognition=speechRecognitionConstructor();
+  if(!Recognition){setSpeechStatus(voiceText("noRecognition"),true);return;}
+  if(speechRecognition)return;
+  try{
+    speechRecognition=new Recognition();
+    speechRecognition.lang=APP_LOCALES[APP_LANGUAGE]||"de-DE";
+    speechRecognition.continuous=true;
+    speechRecognition.interimResults=false;
+    speechRecognition.onstart=()=>{document.getElementById("speechStart").disabled=true;document.getElementById("speechStop").disabled=false;setSpeechStatus(voiceText("listening"));};
+    speechRecognition.onresult=event=>{
+      let added="";
+      for(let i=event.resultIndex;i<event.results.length;i++)if(event.results[i].isFinal)added+=event.results[i][0].transcript;
+      if(added){const input=document.getElementById("speechTranscript");input.value=(input.value.trim()?input.value.trim()+" ":"")+added.trim();speechDrafts=[];document.getElementById("speechPreview").innerHTML="";document.getElementById("speechApply").disabled=true;setSpeechStatus(voiceText("ready"));}
+    };
+    speechRecognition.onerror=()=>setSpeechStatus(voiceText("noRecognition"),true);
+    speechRecognition.onend=()=>{speechRecognition=null;document.getElementById("speechStart").disabled=false;document.getElementById("speechStop").disabled=true;};
+    speechRecognition.start();
+  }catch(e){speechRecognition=null;setSpeechStatus(voiceText("noRecognition"),true);}
+}
+function validateSpeechDrafts(){
+  const issues=[];
+  if(!speechDrafts.length)issues.push(voiceText("noRanges"));
+  const current=loadDayEntry(selectedDate);
+  if(current.status)issues.push(voiceText("existingStatus"));
+  speechDrafts.forEach(booking=>{
+    if(!booking.projekt.trim())issues.push(voiceText("missingProject"));
+    const validTime=/^(?:[01]\d|2[0-3]):[0-5]\d$/;
+    if(!validTime.test(booking.beginn)||!validTime.test(booking.ende)||Number(booking.pause)<0||!Number.isFinite(Number(booking.pause))||computeBookingResult(booking).error)issues.push(voiceText("invalidTime"));
+  });
+  if(speechDrafts.length&&findBookingOverlap([...(current.buchungen||[]),...speechDrafts])!==null)issues.push(voiceText("overlap"));
+  return [...new Set(issues)];
+}
+function renderSpeechPreview(){
+  const preview=document.getElementById("speechPreview");
+  if(!speechDrafts.length){preview.innerHTML="";document.getElementById("speechApply").disabled=true;return;}
+  let html='<div class="speech-preview-title">'+escapeHTML(voiceText("preview"))+'</div>';
+  html+=speechDrafts.map((booking,index)=>'<div class="speech-booking" data-speech-booking="'+index+'">'+
+    '<div class="field"><label>'+escapeHTML(voiceText("project"))+'</label><input type="text" data-speech-field="projekt" value="'+escapeHTML(booking.projekt)+'" list="speechProjectOptions"></div>'+
+    '<div class="field"><label>'+escapeHTML(voiceText("startTime"))+'</label><input type="time" data-speech-field="beginn" value="'+escapeHTML(booking.beginn)+'"></div>'+
+    '<div class="field"><label>'+escapeHTML(voiceText("endTime"))+'</label><input type="time" data-speech-field="ende" value="'+escapeHTML(booking.ende)+'"></div>'+
+    '<div class="field"><label>'+escapeHTML(voiceText("break"))+'</label><input type="number" min="0" step="1" data-speech-field="pause" value="'+escapeHTML(booking.pause)+'"></div>'+
+    '</div>').join("");
+  html+='<datalist id="speechProjectOptions">'+getProjectSuggestions().map(project=>'<option value="'+escapeHTML(project)+'"></option>').join("")+'</datalist>';
+  preview.innerHTML=html;
+  preview.querySelectorAll("[data-speech-field]").forEach(input=>input.addEventListener("input",()=>{
+    const card=input.closest("[data-speech-booking]");
+    speechDrafts[Number(card.dataset.speechBooking)][input.dataset.speechField]=input.value;
+    updateSpeechValidation();
+  }));
+  updateSpeechValidation();
+}
+function updateSpeechValidation(){
+  const issues=validateSpeechDrafts(), preview=document.getElementById("speechPreview");
+  preview.querySelector(".speech-preview-errors")?.remove();
+  if(issues.length){
+    const list=document.createElement("ul");list.className="speech-preview-errors";
+    list.innerHTML=issues.map(issue=>'<li>'+escapeHTML(issue)+'</li>').join("");
+    preview.appendChild(list);
+  }
+  document.getElementById("speechApply").disabled=issues.length>0;
+}
+function recognizeSpeechBookings(){
+  const transcript=document.getElementById("speechTranscript").value.trim();
+  if(!transcript){speechDrafts=[];renderSpeechPreview();setSpeechStatus(voiceText("noText"),true);return;}
+  speechDrafts=parseSpokenBookings(transcript);
+  if(!speechDrafts.length){renderSpeechPreview();setSpeechStatus(voiceText("noRanges"),true);return;}
+  setSpeechStatus(voiceText("ready"));
+  renderSpeechPreview();
+}
+document.getElementById("speechSheet").addEventListener("click",event=>event.stopPropagation());
+document.getElementById("speechOverlay").addEventListener("click",event=>{if(event.target===event.currentTarget)closeSpeechEntry();});
+document.getElementById("closeSpeech").addEventListener("click",closeSpeechEntry);
+document.getElementById("speechCancel").addEventListener("click",closeSpeechEntry);
+document.getElementById("speechStart").addEventListener("click",startSpeechRecognition);
+document.getElementById("speechStop").addEventListener("click",stopSpeechRecognition);
+document.getElementById("speechParse").addEventListener("click",recognizeSpeechBookings);
+document.getElementById("speechTranscript").addEventListener("input",()=>{
+  speechDrafts=[];document.getElementById("speechPreview").innerHTML="";document.getElementById("speechApply").disabled=true;
+});
+document.getElementById("speechApply").addEventListener("click",()=>{
+  const issues=validateSpeechDrafts();
+  if(issues.length){updateSpeechValidation();return;}
+  const entry=loadDayEntry(selectedDate);
+  entry.buchungen.push(...speechDrafts.map(booking=>({...booking})));
+  saveDayEntry(selectedDate,entry);
+  closeSpeechEntry();
+  renderCalendar();renderDayEditor();updateMonthTotal();updateSendLink();
+  const note=document.getElementById("dayEditorNote");
+  note.textContent=voiceText("applied");note.style.display="block";
+  setTimeout(()=>{if(note.isConnected)note.style.display="none";},2500);
+});
+
 function getCalendarCells(monthDate){
   const year = monthDate.getFullYear(), month = monthDate.getMonth();
   const firstOfMonth = new Date(year, month, 1);
@@ -250,6 +417,7 @@ function renderDayEditor(){
       ${e.buchungen.length?`<div class="booking-list">${bookingsHTML}</div>`:`<p class="empty-bookings">Für diesen Tag gibt es noch keine Buchung.</p>`}
       <div class="day-error" id="dayEditorError" style="display:${dayError?"block":"none"};">${dayError}</div>
       ${canCopyPrevious?`<div class="copy-previous-wrap"><button type="button" class="btn-secondary" id="copyPreviousBtn">⧉ Buchungen vom Vortag kopieren</button><small>Die Buchungen werden hinzugefügt. Vorhandene Einträge bleiben erhalten.</small></div>`:""}
+      <div class="speech-entry-wrap"><button type="button" class="btn-secondary" id="speechEntryBtn" ${disabled}>${voiceText("button")}</button></div>
       <button type="button" class="btn-add" id="addBookingBtn" ${disabled}>＋ Buchung hinzufügen</button>
       <div class="field day-status">
         <label>Status</label>
@@ -267,6 +435,7 @@ function renderDayEditor(){
   document.getElementById("dayEditor").querySelectorAll("[data-time-wheel]").forEach(input=>input.addEventListener("click",()=>openTimePicker(input)));
   document.getElementById("dayEditor").querySelectorAll("[data-remove]").forEach(button=>button.addEventListener("click",()=>removeBooking(Number(button.dataset.remove))));
   document.getElementById("addBookingBtn").addEventListener("click", addBooking);
+  document.getElementById("speechEntryBtn").addEventListener("click", openSpeechEntry);
   document.getElementById("copyPreviousBtn")?.addEventListener("click",copyPreviousBookings);
   document.getElementById("fStatus").addEventListener("change", onDayFieldChange);
 }

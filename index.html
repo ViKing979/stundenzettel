@@ -136,9 +136,39 @@
   </div>
 </div>
 
+<div class="overlay" id="speechOverlay" aria-modal="true" role="dialog" aria-labelledby="speechTitle">
+  <div class="sheet speech-sheet" id="speechSheet">
+    <div class="sheet-head">
+      <h2 id="speechTitle" style="font-size:16px;">Spracheingabe für Buchungen</h2>
+      <button class="iconbtn" style="color:#292524;" id="closeSpeech" aria-label="Schließen">✕</button>
+    </div>
+    <div class="sheet-body">
+      <p id="speechInstructions" class="speech-copy">Sprich jede Buchung mit Beginn, Ende und Projekt. Beispiel: „Von 08:00 bis 11:30 Projekt Büro Nord, 15 Minuten Pause.“</p>
+      <p id="speechDate" class="speech-date"></p>
+      <p id="speechPrivacy" class="speech-note">Je nach Browser kann die Spracherkennung über einen Online-Dienst laufen. Prüfe die erkannten Angaben vor dem Speichern.</p>
+      <div class="speech-actions">
+        <button type="button" class="btn-secondary" id="speechStart">🎙️ Aufnahme starten</button>
+        <button type="button" class="btn-secondary" id="speechStop" disabled>Aufnahme stoppen</button>
+      </div>
+      <div id="speechStatus" class="speech-status" aria-live="polite"></div>
+      <div class="field">
+        <label id="speechTranscriptLabel" for="speechTranscript">Erkannter Text</label>
+        <textarea id="speechTranscript" rows="3" placeholder="Zum Beispiel: Von 08:00 bis 11:30 Projekt Büro Nord"></textarea>
+      </div>
+      <button type="button" class="btn-secondary" id="speechParse">Buchungen erkennen</button>
+      <div id="speechPreview" class="speech-preview" aria-live="polite"></div>
+    </div>
+    <div class="sheet-foot">
+      <button type="button" class="btn-cancel" id="speechCancel">Abbrechen</button>
+      <button type="button" class="btn-save" id="speechApply" disabled>Buchungen übernehmen</button>
+    </div>
+  </div>
+</div>
+
 <script src="./xlsx.full.min.js"></script>
 <script src="./i18n.js"></script>
 <script src="./app.js"></script>
 </body>
 </html>
+
 
