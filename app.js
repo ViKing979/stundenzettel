@@ -1,5 +1,8 @@
-const DAY_LABELS = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
-const MONTH_NAMES = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+const APP_LOCALE = APP_LOCALES[APP_LANGUAGE] || "de-DE";
+const DAY_LABELS = Array.from({length:7},(_,i)=>new Date(2024,0,1+i).toLocaleDateString(APP_LOCALE,{weekday:"long"}));
+const MONTH_NAMES = Array.from({length:12},(_,i)=>new Date(2024,i,1).toLocaleDateString(APP_LOCALE,{month:"long"}));
+const GERMAN_DAY_LABELS = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
+const GERMAN_MONTH_NAMES = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
 const STATUS_META = {
   urlaub:    { label: "Urlaub",              bg: "#fef9c3", fg: "#ca8a04" },
   krankheit: { label: "Krankheit",           bg: "#fee2e2", fg: "#dc2626" },
@@ -302,7 +305,7 @@ function openTimePicker(input){
   const current=input.value||"00:00", parts=current.split(":");
   wheelParts={hour:Number(parts[0])||0,minute:Number(parts[1])||0};
   const label=document.querySelector(`label[for="${input.id}"]`);
-  document.getElementById("timePickerTitle").textContent=`${label?.textContent||"Zeit"} wählen`;
+  document.getElementById("timePickerTitle").textContent=translateAppText(`${label?.textContent||"Zeit"} wählen`);
   renderWheelColumn("hourWheel",24,wheelParts.hour);
   renderWheelColumn("minuteWheel",60,wheelParts.minute);
   document.getElementById("timePickerOverlay").classList.add("open");
@@ -338,7 +341,7 @@ function copyPreviousBookings(){
   if(entry.status) return;
   const count=sourceBookings.length;
   const bookingWord=count===1?"Buchung":"Buchungen";
-  if(entry.buchungen.length && !window.confirm(`Es werden ${count} ${bookingWord} zu diesem Tag hinzugefügt. Vorhandene Buchungen bleiben erhalten. Fortfahren?`)) return;
+  if(entry.buchungen.length && !window.confirm(translateAppText(`Es werden ${count} ${bookingWord} zu diesem Tag hinzugefügt. Vorhandene Buchungen bleiben erhalten. Fortfahren?`))) return;
   entry.buchungen.push(...sourceBookings.map(booking=>({
     beginn:booking.beginn,ende:booking.ende,pause:booking.pause,projekt:booking.projekt
   })));
@@ -365,7 +368,7 @@ function onDayFieldChange(ev){
   const errBox = document.getElementById("dayEditorError");
   const overlap=findBookingOverlap(entry.buchungen);
   const error=result.error || (overlap!==null ? `Buchung ${overlap+1} überschneidet sich zeitlich mit einer anderen Buchung.` : "");
-  errBox.textContent=error; errBox.style.display=error?"block":"none";
+  errBox.textContent=translateAppText(error); errBox.style.display=error?"block":"none";
   entry.buchungen.forEach((b,i)=>{
     const bookingResult=computeBookingResult(b), card=document.querySelector(`[data-booking="${i}"]`);
     if(card){ card.querySelector(".booking-duration").textContent=formatMinutes(bookingResult.minutes)+" Std."; const end=card.querySelector('[data-field="ende"]'); if(end) end.classList.toggle("input-error",!!bookingResult.error); }
@@ -493,13 +496,13 @@ document.getElementById("saveAdmin").addEventListener("click", ()=>{
     state.admin = draft;
     renderDayEditor();
     updateMonthTotal();
-    note.textContent = "Gespeichert";
+    note.textContent = translateAppText("Gespeichert");
     note.style.color = "var(--teal-700)";
     note.style.display = "block";
     updateSendLink();
     setTimeout(closeAdmin, 700);
   } catch(e){
-    note.textContent = "Speichern fehlgeschlagen: "+(e.message||"unbekannter Fehler");
+    note.textContent = translateAppText("Speichern fehlgeschlagen: "+(e.message||"unbekannter Fehler"));
     note.style.color = "var(--red-600)";
     note.style.display = "block";
   }
@@ -518,7 +521,7 @@ function buildBackupData(){
 }
 function showAdminNote(message,isError=false){
   const note=document.getElementById("adminNote");
-  note.textContent=message; note.style.color=isError?"var(--red-600)":"var(--teal-700)"; note.style.display="block";
+  note.textContent=translateAppText(message); note.style.color=isError?"var(--red-600)":"var(--teal-700)"; note.style.display="block";
 }
 document.getElementById("backupExportBtn").addEventListener("click",()=>{
   const backup=buildBackupData();
@@ -540,7 +543,7 @@ document.getElementById("backupImportInput").addEventListener("change",async ev=
       days[date]=normalizeEntry(raw);
     }
     const admin=normalizeAdmin(backup.admin);
-    if(!window.confirm(`Diese Sicherung enthält ${Object.keys(days).length} Tage. Alle vorhandenen Stundenzettel-Daten auf diesem Gerät werden ersetzt. Fortfahren?`)) return;
+    if(!window.confirm(translateAppText(`Diese Sicherung enthält ${Object.keys(days).length} Tage. Alle vorhandenen Stundenzettel-Daten auf diesem Gerät werden ersetzt. Fortfahren?`))) return;
     const oldData=[];
     for(let i=0;i<localStorage.length;i++){
       const key=localStorage.key(i);
@@ -574,7 +577,7 @@ document.getElementById("backupImportInput").addEventListener("change",async ev=
 function buildBodyText(){
   const dates = getMonthDates(viewMonth);
   const lines = [];
-  lines.push(`Stundenuebersicht ${MONTH_NAMES[viewMonth.getMonth()]} ${viewMonth.getFullYear()}`);
+  lines.push(`Stundenuebersicht ${GERMAN_MONTH_NAMES[viewMonth.getMonth()]} ${viewMonth.getFullYear()}`);
   lines.push(`${state.admin.vorname} ${state.admin.nachname}${state.admin.personalnummer ? " (Personalnr. "+state.admin.personalnummer+")" : ""}`);
   lines.push("");
   lines.push("Tag          Datum   Beginn  Ende   Pause   Gesamt  Projekt          Abwesenheitsgrund");
@@ -587,7 +590,7 @@ function buildBodyText(){
     totalMin += result.minutes;
     if(e.status && counts.hasOwnProperty(e.status)) counts[e.status]++;
     const abwesenheit = e.status && STATUS_META[e.status] ? STATUS_META[e.status].label : "";
-    const tag = DAY_LABELS[weekdayIndex(d)].padEnd(12," ");
+    const tag = GERMAN_DAY_LABELS[weekdayIndex(d)].padEnd(12," ");
     const datum = `${pad(d.getDate())}.${pad(d.getMonth()+1)}.`.padEnd(7," ");
     if(e.status){ lines.push(`${tag} ${datum} ${"--:--".padEnd(7," ")} ${"--:--".padEnd(6," ")} ${"0 Min".padEnd(7," ")} ${"00:00".padEnd(7," ")} ${"".padEnd(16," ")} ${abwesenheit}`); }
     else if(!e.buchungen.length){ lines.push(`${tag} ${datum}`); }
@@ -608,7 +611,7 @@ function buildBodyText(){
 }
 
 function updateSendLink(){
-  const subject = `Stundenuebersicht ${MONTH_NAMES[viewMonth.getMonth()]} ${viewMonth.getFullYear()} - ${state.admin.vorname} ${state.admin.nachname}`;
+  const subject = `Stundenuebersicht ${GERMAN_MONTH_NAMES[viewMonth.getMonth()]} ${viewMonth.getFullYear()} - ${state.admin.vorname} ${state.admin.nachname}`;
   const body = buildBodyText();
   const link = document.getElementById("sendMailBtn");
   if(state.admin.empfaengerEmail){
@@ -654,8 +657,8 @@ function validateMonthData(){
 
 let pendingAction = null;
 function openConfirm(message, issues){
-  document.getElementById("confirmMessage").textContent = message;
-  document.getElementById("confirmIssueList").innerHTML = issues.map(i=>`<li>${i}</li>`).join("");
+  document.getElementById("confirmMessage").textContent = translateAppText(message);
+  document.getElementById("confirmIssueList").innerHTML = issues.map(i=>`<li>${translateAppText(i)}</li>`).join("");
   document.getElementById("confirmOverlay").classList.add("open");
 }
 function closeConfirmOverlay(){
@@ -695,7 +698,7 @@ document.getElementById("sendMailBtn").addEventListener("click",(e)=>{
   const errBox = document.getElementById("sendError");
   document.getElementById("sendNote").style.display="none";
   if(!state.admin.empfaengerEmail){
-    errBox.textContent = "Bitte zuerst die Empfänger-E-Mail im Adminbereich eintragen.";
+    errBox.textContent = translateAppText("Bitte zuerst die Empfänger-E-Mail im Adminbereich eintragen.");
     errBox.style.display="block";
     openAdmin();
     return;
@@ -707,12 +710,12 @@ async function proceedWithMailSend(){
   const errBox=document.getElementById("sendError");
   const {blob,filename}=buildWorkbookBlob();
   if(!blob){
-    errBox.textContent="Excel-Datei konnte nicht erstellt werden. Bitte Internetverbindung prüfen und erneut versuchen.";
+    errBox.textContent=translateAppText("Excel-Datei konnte nicht erstellt werden. Bitte Internetverbindung prüfen und erneut versuchen.");
     errBox.style.display="block";
     return;
   }
   const file=new File([blob],filename,{type:blob.type});
-  const subject=`Stundenuebersicht ${MONTH_NAMES[viewMonth.getMonth()]} ${viewMonth.getFullYear()} - ${state.admin.vorname} ${state.admin.nachname}`;
+  const subject=`Stundenuebersicht ${GERMAN_MONTH_NAMES[viewMonth.getMonth()]} ${viewMonth.getFullYear()} - ${state.admin.vorname} ${state.admin.nachname}`;
   const recipient=state.admin.empfaengerEmail;
   const body=buildBodyText();
   if(navigator.share && navigator.canShare){
@@ -728,14 +731,14 @@ async function proceedWithMailSend(){
   // mailto links cannot attach files; download the workbook and open a prepared draft as a fallback.
   downloadBlob(blob,filename);
   const note=document.getElementById("sendNote");
-  note.textContent="Dein Browser kann Dateien nicht direkt an die E-Mail übergeben. Die Excel-Datei wurde heruntergeladen; füge sie im E-Mail-Entwurf als Anhang hinzu.";
+  note.textContent=translateAppText("Dein Browser kann Dateien nicht direkt an die E-Mail übergeben. Die Excel-Datei wurde heruntergeladen; füge sie im E-Mail-Entwurf als Anhang hinzu.");
   note.style.display="block";
   document.getElementById("sendMailBtn").href=`mailto:${encodeURIComponent(recipient)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   window.location.href=document.getElementById("sendMailBtn").href;
 }
 
 document.getElementById("copyBtn").addEventListener("click", async ()=>{
-  const subject = `Stundenuebersicht ${MONTH_NAMES[viewMonth.getMonth()]} ${viewMonth.getFullYear()} - ${state.admin.vorname} ${state.admin.nachname}`;
+  const subject = `Stundenuebersicht ${GERMAN_MONTH_NAMES[viewMonth.getMonth()]} ${viewMonth.getFullYear()} - ${state.admin.vorname} ${state.admin.nachname}`;
   const text = `An: ${state.admin.empfaengerEmail || "(keine Empfänger-E-Mail hinterlegt)"}\nBetreff: ${subject}\n\n${buildBodyText()}`;
   const note = document.getElementById("copyNote");
   let ok = false;
@@ -754,7 +757,7 @@ document.getElementById("copyBtn").addEventListener("click", async ()=>{
       document.body.removeChild(ta);
     } catch(e2){ ok = false; }
   }
-  note.textContent = ok ? "In Zwischenablage kopiert – jetzt in der Mail-App einfügen." : "Kopieren nicht möglich – bitte Text manuell markieren.";
+  note.textContent = translateAppText(ok ? "In Zwischenablage kopiert – jetzt in der Mail-App einfügen." : "Kopieren nicht möglich – bitte Text manuell markieren.");
   note.style.display = "block";
   setTimeout(()=> note.style.display="none", 2500);
 });
@@ -766,7 +769,7 @@ function buildWorkbookBlob(){
   const rows = [
     ["Stundenübersicht"],
     [`${state.admin.vorname} ${state.admin.nachname}`, state.admin.personalnummer?`Personalnr. ${state.admin.personalnummer}`:""],
-    [`${MONTH_NAMES[viewMonth.getMonth()]} ${viewMonth.getFullYear()}`],
+    [`${GERMAN_MONTH_NAMES[viewMonth.getMonth()]} ${viewMonth.getFullYear()}`],
     [],
     ["Tag","Datum","Beginn","Ende","Pause (Min)","Gesamt (Std)","Projekt","Abwesenheitsgrund"]
   ];
@@ -779,11 +782,11 @@ function buildWorkbookBlob(){
     totalMin += result.minutes;
     if(e.status && counts.hasOwnProperty(e.status)) counts[e.status]++;
     const abwesenheit = e.status && STATUS_META[e.status] ? STATUS_META[e.status].label : "";
-    if(e.status) rows.push([DAY_LABELS[weekdayIndex(d)], ds, "", "", "0", "00:00", "", abwesenheit]);
-    else if(!e.buchungen.length) rows.push([DAY_LABELS[weekdayIndex(d)],ds,"","","","00:00","",""]);
+    if(e.status) rows.push([GERMAN_DAY_LABELS[weekdayIndex(d)], ds, "", "", "0", "00:00", "", abwesenheit]);
+    else if(!e.buchungen.length) rows.push([GERMAN_DAY_LABELS[weekdayIndex(d)],ds,"","","","00:00","",""]);
     else e.buchungen.forEach((b,i)=>{
       const bookingResult=computeBookingResult(b);
-      rows.push([i===0?DAY_LABELS[weekdayIndex(d)]:"",i===0?ds:"",b.beginn||"",b.ende||"",b.pause||"0",formatMinutes(bookingResult.minutes),b.projekt||"",""]);
+      rows.push([i===0?GERMAN_DAY_LABELS[weekdayIndex(d)]:"",i===0?ds:"",b.beginn||"",b.ende||"",b.pause||"0",formatMinutes(bookingResult.minutes),b.projekt||"",""]);
     });
   });
   rows.push([]);
@@ -793,7 +796,7 @@ function buildWorkbookBlob(){
   rows.push([`Monatssumme Krankheit`, `${counts.krankheit} ${tagWort(counts.krankheit)}`]);
   rows.push([`Monatssumme Feiertag`, `${counts.feiertag} ${tagWort(counts.feiertag)}`]);
   rows.push([`Monatssumme Unbezahlter Urlaub`, `${counts.unbezahlt} ${tagWort(counts.unbezahlt)}`]);
-  const filename = `Stundenzettel_${state.admin.nachname||"Mitarbeiter"}_${MONTH_NAMES[viewMonth.getMonth()]}_${viewMonth.getFullYear()}.xlsx`;
+  const filename = `Stundenzettel_${state.admin.nachname||"Mitarbeiter"}_${GERMAN_MONTH_NAMES[viewMonth.getMonth()]}_${viewMonth.getFullYear()}.xlsx`;
 
   if (typeof XLSX === "undefined") return { blob: null, filename };
 
@@ -821,7 +824,7 @@ async function proceedWithExcelDownload(){
   const note = document.getElementById("shareNote");
   const {blob, filename} = buildWorkbookBlob();
   if (!blob){
-    note.textContent = "Excel-Bibliothek konnte nicht geladen werden (Internetverbindung prüfen) – bitte erneut versuchen.";
+    note.textContent = translateAppText("Excel-Bibliothek konnte nicht geladen werden (Internetverbindung prüfen) – bitte erneut versuchen.");
     note.style.color = "var(--red-600)";
     note.style.display = "block";
     return;
@@ -830,7 +833,7 @@ async function proceedWithExcelDownload(){
   const file = new File([blob], filename, {type: blob.type});
   if (navigator.canShare && navigator.canShare({files:[file]})){
     try {
-      const subject = `Stundenuebersicht ${MONTH_NAMES[viewMonth.getMonth()]} ${viewMonth.getFullYear()} - ${state.admin.vorname} ${state.admin.nachname}`;
+      const subject = `Stundenuebersicht ${GERMAN_MONTH_NAMES[viewMonth.getMonth()]} ${viewMonth.getFullYear()} - ${state.admin.vorname} ${state.admin.nachname}`;
       await navigator.share({files:[file], title: subject, text: buildBodyText()});
       return;
     } catch(e){
@@ -839,13 +842,14 @@ async function proceedWithExcelDownload(){
   }
 
   downloadBlob(blob, filename);
-  note.textContent = `Datei "${filename}" heruntergeladen – jetzt in deiner Mail-App als Anhang auswählen.`;
+  note.textContent = translateAppText(`Datei "${filename}" heruntergeladen – jetzt in deiner Mail-App als Anhang auswählen.`);
   note.style.color = "var(--teal-700)";
   note.style.display = "block";
   setTimeout(()=> note.style.display="none", 4500);
 }
 
 // ---- Start ----
+initializeAppLanguage();
 migrateOldWeekData();
 loadAdmin();
 renderMonthHeader();

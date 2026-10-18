@@ -1,5 +1,5 @@
-const CACHE_NAME = "stundenzettel-v9";
-const ASSETS = ["./", "./index.html", "./anleitung.html", "./Benutzeranleitung-Stundenzettel.docx", "./app.js", "./styles.css", "./xlsx.full.min.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
+const CACHE_NAME = "stundenzettel-v12";
+const ASSETS = ["./", "./index.html", "./anleitung.html", "./Benutzeranleitung-Stundenzettel.docx", "./app.js", "./i18n.js", "./styles.css", "./xlsx.full.min.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
