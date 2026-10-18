@@ -1,5 +1,5 @@
-const CACHE_NAME = "stundenzettel-v6";
-const ASSETS = ["./", "./index.html", "./app.js", "./styles.css", "./xlsx.full.min.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
+const CACHE_NAME = "stundenzettel-v8";
+const ASSETS = ["./", "./index.html", "./anleitung.html", "./app.js", "./styles.css", "./xlsx.full.min.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -18,37 +18,17 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  const isHtml =
-    event.request.mode === "navigate" ||
-    (event.request.method === "GET" && (event.request.headers.get("accept") || "").includes("text/html"));
+  if (event.request.method !== "GET" || new URL(event.request.url).origin !== self.location.origin) return;
 
-  if (isHtml) {
-    // Network-first fuer HTML: neue Inhalte kommen sofort an, offline gibt es den letzten Stand aus dem Cache
-    event.respondWith(
-      fetch(event.request)
-        .then((res) => {
-          const resClone = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
-          return res;
-        })
-        .catch(() => caches.match(event.request))
-    );
-    return;
-  }
-
-  // Cache-first fuer restliche Assets (Icons, Manifest) - schneller Ladevorgang, Update im Hintergrund
+  // Online immer die aktuelle Datei holen und fuer Offline-Nutzung aktualisieren.
+  // So bleiben auch JavaScript und Gestaltung nicht dauerhaft auf einem alten Cache-Stand.
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return (
-        cached ||
-        fetch(event.request)
-          .then((res) => {
-            const resClone = res.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
-            return res;
-          })
-          .catch(() => cached)
-      );
-    })
+    fetch(event.request, { cache: "no-cache" }).then((res) => {
+      if (res.ok) {
+        const resClone = res.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
+      }
+      return res;
+    }).catch(() => caches.match(event.request))
   );
 });
