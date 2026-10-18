@@ -1,5 +1,5 @@
-const CACHE_NAME = "stundenzettel-v5";
-const ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
+const CACHE_NAME = "stundenzettel-v6";
+const ASSETS = ["./", "./index.html", "./app.js", "./styles.css", "./xlsx.full.min.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
