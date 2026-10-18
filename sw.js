@@ -1,4 +1,4 @@
-const CACHE_NAME = "stundenzettel-v12";
+const CACHE_NAME = "stundenzettel-v14";
 const ASSETS = ["./", "./index.html", "./anleitung.html", "./Benutzeranleitung-Stundenzettel.docx", "./app.js", "./i18n.js", "./styles.css", "./xlsx.full.min.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -32,3 +32,4 @@ self.addEventListener("fetch", (event) => {
     }).catch(() => caches.match(event.request))
   );
 });
+
