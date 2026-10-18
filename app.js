@@ -63,7 +63,8 @@ function normalizeAdmin(raw={}){
   return {
     vorname:String(raw.vorname||""),nachname:String(raw.nachname||""),personalnummer:String(raw.personalnummer||""),
     empfaengerEmail:String(raw.empfaengerEmail||""),timePicker:raw.timePicker==="wheel"?"wheel":"clock",
-    projects:[...new Set(projects.map(p=>String(p).trim()).filter(Boolean))]
+    projects:[...new Set(projects.map(p=>String(p).trim()).filter(Boolean))],
+    workingDays:[...new Set((Array.isArray(raw.workingDays)?raw.workingDays:[]).map(Number).filter(day=>Number.isInteger(day)&&day>=0&&day<=6))].sort((a,b)=>a-b)
   };
 }
 
@@ -211,6 +212,10 @@ function renderDayEditor(){
   const result = computeDailyResult(e);
   const disabled = e.status ? "disabled" : "";
   const meta = e.status ? STATUS_META[e.status] : null;
+  const previousDate = new Date(d);
+  previousDate.setDate(previousDate.getDate()-1);
+  const previousEntry = loadDayEntry(toISODate(previousDate));
+  const canCopyPrevious = !e.status && previousEntry.buchungen.some(b=>b.beginn||b.ende||b.pause||b.projekt);
   const bookingsHTML = e.buchungen.map((b,i)=>{
     const bookingResult=computeBookingResult(b);
     return `<div class="booking" data-booking="${i}">
@@ -241,6 +246,7 @@ function renderDayEditor(){
       </div>
       ${e.buchungen.length?`<div class="booking-list">${bookingsHTML}</div>`:`<p class="empty-bookings">Für diesen Tag gibt es noch keine Buchung.</p>`}
       <div class="day-error" id="dayEditorError" style="display:${dayError?"block":"none"};">${dayError}</div>
+      ${canCopyPrevious?`<div class="copy-previous-wrap"><button type="button" class="btn-secondary" id="copyPreviousBtn">⧉ Buchungen vom Vortag kopieren</button><small>Die Buchungen werden hinzugefügt. Vorhandene Einträge bleiben erhalten.</small></div>`:""}
       <button type="button" class="btn-add" id="addBookingBtn" ${disabled}>＋ Buchung hinzufügen</button>
       <div class="field day-status">
         <label>Status</label>
@@ -258,6 +264,7 @@ function renderDayEditor(){
   document.getElementById("dayEditor").querySelectorAll("[data-time-wheel]").forEach(input=>input.addEventListener("click",()=>openTimePicker(input)));
   document.getElementById("dayEditor").querySelectorAll("[data-remove]").forEach(button=>button.addEventListener("click",()=>removeBooking(Number(button.dataset.remove))));
   document.getElementById("addBookingBtn").addEventListener("click", addBooking);
+  document.getElementById("copyPreviousBtn")?.addEventListener("click",copyPreviousBookings);
   document.getElementById("fStatus").addEventListener("change", onDayFieldChange);
 }
 
@@ -320,6 +327,23 @@ function addBooking(){
   entry.buchungen.push(next);
   saveDayEntry(selectedDate,entry); renderDayEditor(); updateMonthTotal(); updateSendLink();
   const input=document.querySelector(`#fProjekt${entry.buchungen.length-1}`); if(input) input.focus();
+}
+function copyPreviousBookings(){
+  const previousDate=new Date(selectedDate+"T00:00:00");
+  previousDate.setDate(previousDate.getDate()-1);
+  const previousEntry=loadDayEntry(toISODate(previousDate));
+  const sourceBookings=previousEntry.buchungen.filter(b=>b.beginn||b.ende||b.pause||b.projekt);
+  if(!sourceBookings.length) return;
+  const entry=loadDayEntry(selectedDate);
+  if(entry.status) return;
+  const count=sourceBookings.length;
+  const bookingWord=count===1?"Buchung":"Buchungen";
+  if(entry.buchungen.length && !window.confirm(`Es werden ${count} ${bookingWord} zu diesem Tag hinzugefügt. Vorhandene Buchungen bleiben erhalten. Fortfahren?`)) return;
+  entry.buchungen.push(...sourceBookings.map(booking=>({
+    beginn:booking.beginn,ende:booking.ende,pause:booking.pause,projekt:booking.projekt
+  })));
+  saveDayEntry(selectedDate,entry);
+  renderCalendar(); renderDayEditor(); updateMonthTotal(); updateSendLink();
 }
 function removeBooking(index){
   const entry=loadDayEntry(selectedDate);
@@ -405,7 +429,7 @@ function renderMonthSummary(dates=getMonthDates(viewMonth),total=dates.reduce((s
     if(!entry.status && computeDailyMinutes(entry)>12*60) warnings.push(`${DAY_LABELS[weekdayIndex(date)]}, ${pad(date.getDate())}.${pad(date.getMonth()+1)}.: mehr als 12 Arbeitsstunden.`);
   }
   const projects=[...projectMinutes.entries()].sort((a,b)=>b[1]-a[1]);
-  const warningMarkup=warnings.length?`<div class="summary-warning"><strong>${warnings.length} offene oder auffällige Angabe${warnings.length===1?"":"n"}</strong><ul>${warnings.slice(0,5).map(w=>`<li>${escapeHTML(w)}</li>`).join("")}</ul>${warnings.length>5?`<span>und ${warnings.length-5} weitere …</span>`:""}</div>`:`<div class="summary-ok">Keine unvollständigen Buchungen oder Zeitüberschneidungen gefunden.</div>`;
+  const warningMarkup=warnings.length?`<div class="summary-warning"><strong>${warnings.length} offene oder auffällige Angabe${warnings.length===1?"":"n"}</strong><ul>${warnings.slice(0,5).map(w=>`<li>${escapeHTML(w)}</li>`).join("")}</ul>${warnings.length>5?`<span>und ${warnings.length-5} weitere …</span>`:""}</div>`:`<div class="summary-ok">Keine fehlenden Einträge, unvollständigen Buchungen oder Zeitüberschneidungen gefunden.</div>`;
   document.getElementById("monthSummary").innerHTML=`<section class="summary-card" aria-labelledby="summaryHeading">
     <h2 id="summaryHeading">Monatsauswertung · ${MONTH_NAMES[viewMonth.getMonth()]} ${viewMonth.getFullYear()}</h2>
     <div class="summary-stats"><div class="summary-stat"><span>Erfasste Arbeitstage</span><strong>${workdays}</strong></div><div class="summary-stat"><span>Arbeitszeit gesamt</span><strong>${formatMinutes(total)} Std.</strong></div></div>
@@ -443,6 +467,7 @@ function openAdmin(){
   document.getElementById("fEmpfaenger").value = state.admin.empfaengerEmail||"";
   document.getElementById("fTimePicker").value = state.admin.timePicker||"clock";
   document.getElementById("fProjects").value = (state.admin.projects||[]).join("\n");
+  for(let day=0;day<7;day++) document.getElementById(`fWorkingDay${day}`).checked=state.admin.workingDays.includes(day);
   document.getElementById("adminNote").style.display="none";
   adminOverlay.classList.add("open");
 }
@@ -460,6 +485,7 @@ document.getElementById("saveAdmin").addEventListener("click", ()=>{
     empfaengerEmail: document.getElementById("fEmpfaenger").value.trim(),
     timePicker: document.getElementById("fTimePicker").value==="wheel"?"wheel":"clock",
     projects:document.getElementById("fProjects").value.split(/\r?\n/),
+    workingDays:Array.from({length:7},(_,day)=>day).filter(day=>document.getElementById(`fWorkingDay${day}`).checked),
   });
   const note = document.getElementById("adminNote");
   try {
@@ -536,6 +562,7 @@ document.getElementById("backupImportInput").addEventListener("change",async ev=
     document.getElementById("fEmpfaenger").value=admin.empfaengerEmail;
     document.getElementById("fTimePicker").value=admin.timePicker;
     document.getElementById("fProjects").value=admin.projects.join("\n");
+    for(let day=0;day<7;day++) document.getElementById(`fWorkingDay${day}`).checked=admin.workingDays.includes(day);
     renderCalendar(); renderDayEditor(); updateMonthTotal(); updateSendLink();
     showAdminNote("Datensicherung wurde wiederhergestellt.");
   }catch(error){ showAdminNote(error.message||"Die Sicherung konnte nicht gelesen werden.",true); }
@@ -559,9 +586,9 @@ function buildBodyText(){
     const result = computeDailyResult(e);
     totalMin += result.minutes;
     if(e.status && counts.hasOwnProperty(e.status)) counts[e.status]++;
+    const abwesenheit = e.status && STATUS_META[e.status] ? STATUS_META[e.status].label : "";
     const tag = DAY_LABELS[weekdayIndex(d)].padEnd(12," ");
     const datum = `${pad(d.getDate())}.${pad(d.getMonth()+1)}.`.padEnd(7," ");
-    const abwesenheit = e.status && STATUS_META[e.status] ? STATUS_META[e.status].label : "";
     if(e.status){ lines.push(`${tag} ${datum} ${"--:--".padEnd(7," ")} ${"--:--".padEnd(6," ")} ${"0 Min".padEnd(7," ")} ${"00:00".padEnd(7," ")} ${"".padEnd(16," ")} ${abwesenheit}`); }
     else if(!e.buchungen.length){ lines.push(`${tag} ${datum}`); }
     else e.buchungen.forEach((b,i)=>{
@@ -616,6 +643,10 @@ function validateMonthData(){
         if(b.beginn&&b.ende&&!b.projekt.trim()) issues.push(`${label}, Buchung ${i+1}: Projekt fehlt noch.`);
       });
       if(findBookingOverlap(e.buchungen)!==null) issues.push(`${label}: Buchungen überschneiden sich zeitlich.`);
+    }
+    const hasBookingData=e.buchungen.some(b=>b.beginn||b.ende||b.pause||b.projekt);
+    if(ds<toISODate(new Date()) && state.admin.workingDays.includes(weekdayIndex(d)) && !e.status && !hasBookingData){
+      issues.push(`${label}: üblicher Arbeitstag ohne Buchung oder Abwesenheitsstatus.`);
     }
   });
   return { issues, hasAnyData };

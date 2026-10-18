@@ -72,6 +72,19 @@
       <div><label>Personalnummer</label><input id="fPersonalnummer" type="text"></div>
       <div><label>E-Mail Empfänger (Arbeitgeber)</label><input id="fEmpfaenger" type="email"></div>
       <div><label for="fTimePicker">Zeiteingabe</label><select id="fTimePicker"><option value="clock">Ziffernblatt (bisher)</option><option value="wheel">24‑Stunden-Rad (Stunden und Minuten)</option></select></div>
+      <div>
+        <label>Übliche Arbeitstage (optional)</label>
+        <div class="weekday-select">
+          <label class="weekday-option"><input id="fWorkingDay0" type="checkbox"> Mo</label>
+          <label class="weekday-option"><input id="fWorkingDay1" type="checkbox"> Di</label>
+          <label class="weekday-option"><input id="fWorkingDay2" type="checkbox"> Mi</label>
+          <label class="weekday-option"><input id="fWorkingDay3" type="checkbox"> Do</label>
+          <label class="weekday-option"><input id="fWorkingDay4" type="checkbox"> Fr</label>
+          <label class="weekday-option"><input id="fWorkingDay5" type="checkbox"> Sa</label>
+          <label class="weekday-option"><input id="fWorkingDay6" type="checkbox"> So</label>
+        </div>
+        <small>Vergangene ausgewählte Arbeitstage ohne Buchung oder Abwesenheitsstatus werden in der Monatsprüfung angezeigt.</small>
+      </div>
       <div><label for="fProjects">Meine Projekte (je eine Zeile)</label><textarea id="fProjects" rows="4" placeholder="Musterstraße 12&#10;Büro Nord"></textarea><small>Gespeicherte und bereits verwendete Projekte erscheinen als Vorschläge.</small></div>
       <div class="backup-actions">
         <button type="button" class="btn-secondary" id="backupExportBtn">⬇ Datensicherung herunterladen</button>
