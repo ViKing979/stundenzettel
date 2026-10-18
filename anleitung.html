@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#134e4a">
+  <title>Benutzeranleitung – Stundenzettel</title>
+  <link rel="stylesheet" href="./styles.css">
+  <style>
+    .guide-main { max-width:760px; margin:0 auto; padding:20px 16px 48px; }
+    .guide-card { background:#fff; border:1px solid var(--stone-200); border-radius:14px; padding:20px; margin:0 0 14px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+    .guide-main h1 { font-size:23px; margin:0 0 8px; }
+    .guide-main h2 { font-size:17px; margin:0 0 10px; color:var(--teal-900); }
+    .guide-main h3 { font-size:14px; margin:16px 0 6px; }
+    .guide-main p, .guide-main li { font-size:15px; line-height:1.6; }
+    .guide-main p { margin:6px 0 10px; }
+    .guide-main ol, .guide-main ul { padding-left:24px; margin:8px 0; }
+    .guide-main li { margin:0 0 7px; }
+    .guide-intro { color:var(--stone-500); }
+    .guide-note { padding:12px 14px; border-radius:10px; background:#e8f3f1; color:var(--stone-800); }
+    .guide-warning { background:#fff4d6; }
+    .guide-back { max-width:760px; margin:12px auto 0; padding:0 16px; }
+    .guide-back a { color:#fff; text-decoration:none; font-size:15px; font-weight:600; }
+    .guide-top { padding:12px 16px; }
+    @media(max-width:420px) { .guide-card { padding:16px; } .guide-main h1 { font-size:21px; } .guide-main p, .guide-main li { font-size:14px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="guide-back"><a href="./index.html">‹ Zurück zum Stundenzettel</a></div>
+    <div class="guide-top"><h1 style="font-size:18px;font-weight:700;">Hilfe und Anleitung</h1></div>
+  </header>
+  <main class="guide-main">
+    <section class="guide-card">
+      <h1>So verwendest du den Stundenzettel</h1>
+      <p class="guide-intro">Hier findest du einfache Anleitungen zum Eintragen, Prüfen und Versenden deiner Arbeitszeit.</p>
+      <div class="guide-note"><strong>Deine Einträge werden automatisch gespeichert.</strong> Wenn beim ausgewählten Tag „Gespeichert ✓“ steht, musst du nichts weiter tun.</div>
+      <p><a href="./Benutzeranleitung-Stundenzettel.docx" download>Benutzeranleitung als Word-Datei herunterladen</a></p>
+    </section>
+
+    <section class="guide-card">
+      <h2>Arbeitszeit für einen Tag eintragen</h2>
+      <ol>
+        <li>Wähle oben den richtigen Monat. Mit ‹ und › wechselst du den Monat.</li>
+        <li>Tippe im Kalender auf den Tag, an dem du gearbeitet hast. Prüfe das Datum über dem Tagesfeld.</li>
+        <li>Trage beim Feld „Projekt“ den Projektnamen ein. Du kannst einen Vorschlag antippen oder den Namen selbst schreiben.</li>
+        <li>Trage „Beginn“ und „Ende“ ein. Bei „Pause (Min)“ gibst du die Pausenzeit in Minuten an. Ohne Pause kannst du 0 eintragen.</li>
+        <li>Die Dauer deiner Buchung und die Tagessumme werden angezeigt. Kontrolliere deine Angaben.</li>
+      </ol>
+      <h3>An einem Tag an mehreren Projekten arbeiten</h3>
+      <p>Tippe auf „＋ Buchung hinzufügen“. In der neuen Buchung trägst du das nächste Projekt und seine Arbeitszeiten ein. Die Endzeit der vorherigen Buchung wird als neuer Beginn vorgeschlagen. Prüfe diesen Vorschlag. Die Zeiträume dürfen sich nicht überschneiden.</p>
+      <div class="guide-note"><strong>Beispiel:</strong> Projekt A von 08:00 bis 11:30 und Projekt B von 11:30 bis 15:00. Für jedes Projekt gibt es eine eigene Buchung.</div>
+    </section>
+
+    <section class="guide-card">
+      <h2>Urlaub, Krankheit oder Feiertag eintragen</h2>
+      <ol>
+        <li>Wähle den betreffenden Tag im Kalender aus.</li>
+        <li>Öffne das Feld „Status“ und wähle zum Beispiel „Urlaub“, „Krankheit“ oder „Feiertag“.</li>
+        <li>Prüfe, ob der richtige Status am Tag angezeigt wird. Für diesen Tag sind Arbeitszeitfelder gesperrt.</li>
+      </ol>
+      <div class="guide-note guide-warning"><strong>Achtung:</strong> Arbeitsbuchungen und ein Abwesenheitsstatus passen normalerweise nicht zusammen. Wenn die Monatsprüfung beides meldet, öffne den Tag und korrigiere den Status oder die Buchungen.</div>
+    </section>
+
+    <section class="guide-card">
+      <h2>Monat prüfen</h2>
+      <p>Unter dem Kalender zeigt die Monatsauswertung deine Arbeitstage, die gesamte Arbeitszeit und die Stunden je Projekt.</p>
+      <ul>
+        <li>„Beginn oder Ende fehlt“: Öffne den genannten Tag und vervollständige die Zeit.</li>
+        <li>„Projekt fehlt“: Trage in der Buchung den Projektnamen ein.</li>
+        <li>„Buchungen überschneiden sich“: Prüfe die Uhrzeiten. Zwei Buchungen liegen ganz oder teilweise gleichzeitig.</li>
+        <li>Bei mehr als 12 Arbeitsstunden an einem Tag zeigt die App einen zusätzlichen Hinweis.</li>
+      </ul>
+      <p>Vor dem Senden oder Herunterladen prüft die App den Monat erneut. Bei offenen Punkten kannst du „Abbrechen“ wählen, die Angaben ändern und es noch einmal versuchen.</p>
+    </section>
+
+    <section class="guide-card">
+      <h2>Excel-Datei per E-Mail senden</h2>
+      <ol>
+        <li>Prüfe den Monatsnamen und die Monatsauswertung.</li>
+        <li>Tippe auf „📎 Per E-Mail senden (mit Excel)“. Falls die E-Mail-Adresse des Arbeitgebers fehlt, trage sie im Adminbereich ein und speichere.</li>
+        <li>Wenn sich eine Auswahl zum Teilen öffnet, wähle deine Mail-App. Prüfe dort Empfänger, Betreff und Excel-Datei.</li>
+        <li>Wenn die Datei nicht automatisch angehängt werden kann, lädt die App die Excel-Datei herunter und öffnet einen E-Mail-Entwurf. Füge die Datei aus „Downloads“ als Anhang hinzu.</li>
+        <li>Tippe in deiner Mail-App auf „Senden“. Die App verschickt die E-Mail nicht selbst.</li>
+      </ol>
+      <p>Öffnet sich keine Mail-App? Lade die Excel-Datei mit „Excel-Datei herunterladen“ herunter. Öffne dann deine Mail-App, schreibe eine Nachricht und füge die Datei aus „Downloads“ an.</p>
+    </section>
+
+    <section class="guide-card">
+      <h2>Einstellungen und Zeiteingabe</h2>
+      <ol>
+        <li>Tippe oben auf ☰ und dann auf „Adminbereich“.</li>
+        <li>Hier kannst du deinen Namen, deine Personalnummer, die E-Mail-Adresse des Arbeitgebers und deine Projekte eintragen.</li>
+        <li>Unter „Zeiteingabe“ wählst du „Ziffernblatt“ oder „24-Stunden-Rad“ aus.</li>
+        <li>Tippe auf „Speichern“. Die Auswahl bleibt in diesem Browser auf diesem Gerät erhalten.</li>
+      </ol>
+    </section>
+
+    <section class="guide-card">
+      <h2>Datensicherung erstellen</h2>
+      <ol>
+        <li>Öffne ☰ und danach „Adminbereich“.</li>
+        <li>Tippe auf „Datensicherung herunterladen“. Die Datei liegt danach meist im Ordner „Downloads“.</li>
+        <li>Bewahre die Datei sicher auf. Sie enthält deine Stundenzettel und persönlichen Angaben.</li>
+      </ol>
+      <p>Zum Einlesen einer Sicherung wählst du „Datensicherung wiederherstellen“ und danach die Datei aus. Bestätige nur, wenn du die richtige Sicherung gewählt hast. Dabei werden die vorhandenen Stundenzettel-Daten auf diesem Gerät ersetzt.</p>
+      <div class="guide-note guide-warning"><strong>Wichtig:</strong> Die App speichert Daten im Browser auf deinem Gerät. Ein anderer Browser oder ein neues Gerät erhält diese Daten nicht automatisch. Für einen Gerätewechsel brauchst du eine Datensicherung.</div>
+    </section>
+
+    <section class="guide-card">
+      <h2>Wenn etwas nicht klappt</h2>
+      <ul>
+        <li><strong>Einträge fehlen:</strong> Prüfe, ob du dasselbe Gerät, denselben Browser und den richtigen Monat verwendest.</li>
+        <li><strong>Fehlermeldung bei einer Buchung:</strong> Lies den roten Hinweis. Prüfe Beginn, Ende, Pause und Projekt.</li>
+        <li><strong>Excel-Datei nicht auffindbar:</strong> Suche im Ordner „Downloads“ oder in der Dateien-App nach einem Dateinamen, der mit „Stundenzettel“ beginnt.</li>
+        <li><strong>Unsicher vor dem Senden:</strong> Korrigiere offene Punkte oder frage deine zuständige Ansprechperson.</li>
+      </ul>
+    </section>
+
+    <p><a href="./index.html">‹ Zurück zum Stundenzettel</a></p>
+  </main>
+</body>
+</html>
